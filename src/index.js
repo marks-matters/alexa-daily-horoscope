@@ -7,8 +7,6 @@
 
 
  // 1. Text strings =====================================================================================================
- //    Modify these strings and messages to change the behavior of your Lambda function
-
 var data = {
     'starSignDates': {
         'aries':        {'fromDate': '03-21', 'toDate': '04-19'},
@@ -82,14 +80,15 @@ var handlers = {
         this.emit(':tell', speechOutput);
     },
 	'GetSpecificHoroscopeIntent': function () {
+        var filledSlots = delegateSlotCollection.call(this);
 		speechOutput = "";
         starSign = this.event.request.intent.slots.zodiacSign.value;
-
+        // if the user is new, or has not set a star sign yet, set this as their star sign
         if ( !this.attributes['existingStarSign'] ) {
             this.attributes['existingStarSign'] = starSign;
             existingStarSign = this.attributes['existingStarSign'];
         }
-
+        // get the horoscope of the star sign
         getHoroscope( (reading) => {
             speechOutput = reading;
             reprompt = "Which other horoscope would you like to hear, for example, Scorpio's horoscope or my horoscope?";
@@ -99,8 +98,9 @@ var handlers = {
     'GetUserHoroscopeIntent': function () {
         speechOutput = "";
         // loading any previous session attributes from Dynamo into the session attributes
-        if(this.attributes['existingStarSign']) {   // user has already set their star sign
+        if( this.attributes['existingStarSign'] ) {   // user has already set their star sign
             starSign = this.attributes['existingStarSign'];
+            existingStarSign = this.attributes['existingStarSign'];
             getHoroscope( (reading) => {
                 speechOutput = reading;
                 reprompt = "Which other horoscope would you like to hear, for example, Scorpio's horoscope or my horoscope?";
@@ -108,7 +108,7 @@ var handlers = {
             });
         } else {    // user does not have their star sign set yet
             speechOutput = "What is your star sign?"
-            reprompt = "Save your star sign for convenience, for example, my star sign is Scorpio"
+            reprompt = "Save your star sign for convenience, for example, my star sign is Scorpio."
             this.emit(':ask', speechOutput, reprompt);
         }
     },
@@ -118,13 +118,18 @@ var handlers = {
         var speechOutput = "";
         compareToDate = this.event.request.intent.slots.date.value;
         // loop through the star sign dates, if the date lies in the date range then return the relevant star sign
-        starSign = Object.keys(data.starSignDates).forEach(function(zodiacSign) {
+        var dateStarSign = Object.keys(data.starSignDates).forEach(function(zodiacSign) {
             dateChecker(zodiacSign);
         });
-
+        // if the user is new, or has not set a star sign yet, set this as their star sign
+        if ( !this.attributes['existingStarSign'] ) {
+            this.attributes['existingStarSign'] = starSign;
+            existingStarSign = this.attributes['existingStarSign'];
+        }
+        // emit the response, keep daily horoscope open
         speechOutput = "The star sign for someone born on ";
         reprompt = "Ask for the star sign of a different date, or, check out your star sign's horoscope.";
-        this.emit(":ask", speechOutput + compareToDate + " is " + , reprompt);
+        this.emit(":ask", speechOutput + compareToDate + " is " + dateStarSign, reprompt);
     },
     'GetCompatibleZodiacSignIntent': function () {
         //delegate to Alexa to collect all the required slot values
@@ -138,34 +143,35 @@ var handlers = {
 
         //Your custom intent handling goes here
         speechOutput = "The star sign for ";
-        this.emit(":ask",speechOutput);
+        this.emit(":ask", speechOutput);
     },
     'SetUserZodiacSignIntent': function () {
+        var filledSlots = delegateSlotCollection.call(this);
         speechOutput = "Your star sign has been updated to ";
-        reprompt = "Which star sign's horoscope would you like to hear, for example, Scorpio's horoscope or my horoscope";
-        // set starSign to the slot value that accompanies the SetUserZodiacSignIntent intent
-        starSign = this.event.request.intent.slots.inputZodiacSign.value;
-        this.attributes['existingStarSign'] = starSign;
+        reprompt = "Which star sign's horoscope would you like to hear, for example, Scorpio's horoscope or my horoscope.";
+        // set setStarSign to the slot value that accompanies the SetUserZodiacSignIntent intent
+        var setStarSign = this.event.request.intent.slots.inputZodiacSign.value;
+        this.attributes['existingStarSign'] = setStarSign;
         existingStarSign = this.attributes['existingStarSign'];
         // emit the response, keep daily horoscope open
-        this.emit(':ask', speechOutput + existingStarSign + '. ', reprompt);
+        this.emit(':ask', speechOutput + existingStarSign + '.', reprompt);
     },
     'GetUserZodiacSignIntent': function () {
-        if( starSign ) {
+        if( this.attributes['existingStarSign'] ) {
             speechOutput = "Your star sign is set to ";
-            reprompt = "Which horoscope would you like to hear, for example, Scorpio's horoscope or my horoscope?";
-            this.emit(':ask', speechOutput + starSign, reprompt);
+            reprompt = "If this is not your star sign, you're welcome to change it, just ask.";
+            existingStarSign = this.attributes['existingStarSign'];
+            this.emit(':ask', speechOutput + existingStarSign, reprompt);
         } else {
             speechOutput = "My crystal ball appears faulty, please enlighten me, what is your name and star sign?";
-            reprompt = "Save your star sign for convenience, for example, my star sign is Scorpio";
+            reprompt = "Save your star sign for convenience, for example, my star sign is Scorpio.";
             this.emit(':ask', speechOutput, reprompt);
         }
 
     }
 };
 
-//    END of Intent Handlers {} ========================================================================================
-// 3. Helper Function  =================================================================================================
+// 3. Functions  =================================================================================================
 
 function getHoroscope(callback) {
     var http = require('http');
@@ -191,6 +197,7 @@ function getHoroscope(callback) {
     req.end();
 }
 
+// not currently used
 function readUserStarSign(callback) {
     var AWS = require('aws-sdk');
     AWS.config.update({region: AWSregion});
