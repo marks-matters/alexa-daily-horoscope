@@ -15,7 +15,8 @@ var data = {
     }
 };
 
-var compareToDate = new Date('2017-03-20');
+var compareToDate = new Date();
+compareToDate = new Date("2017-04-30");
 
 function dateChecker(zodiacSign) {
     var correctStarSign = '';
@@ -29,12 +30,21 @@ function dateChecker(zodiacSign) {
     var dateRange = data.starSignDates[zodiacSign];
     if (compareToDate >= fromDate && compareToDate <= toDate) {
         correctStarSign = zodiacSign;
-        console.log(zodiacSign);
+        return zodiacSign;
+    } else {
+        return false;
     }
 }
 
 // data.starSignDates.forEach(dateChecker());
 // Object.keys(data.starSignDates).forEach(dateChecker());
-Object.keys(data.starSignDates).forEach(function(zodiacSign) {
-    dateChecker(zodiacSign);
+Object.keys(data.starSignDates).some(function(zodiacSign) {
+    if( dateChecker(zodiacSign) ) {
+        console.log(zodiacSign);
+        return true;
+    } else {
+        console.log("fail " + zodiacSign);
+    }
+    var dateOptions = {month: 'long', day: 'numeric', timeZone: 'utc'};
+    console.log(compareToDate.toLocaleString('en-GB', dateOptions));
 });

@@ -31,6 +31,7 @@ var welcomeReprompt = "I didn't quite catch that, please request a star sign's h
 var starSign;
 var existingStarSign;
 var compareToDate = new Date();
+var dateOptions = {month: 'long', day: 'numeric', timeZone: 'utc'};
 
 var APP_ID = "amzn1.ask.skill.d373228d-ef5c-4a0c-a005-583c0d25bf11";
 
@@ -53,7 +54,6 @@ exports.handler = function(event, context, callback) {
     var alexa = Alexa.handler(event, context);
     alexa.APP_ID = APP_ID;
     alexa.dynamoDBTableName = 'horoscopeUsers_starsign'; //TODO is this required once table exists?
-
     alexa.registerHandlers(handlers);
     alexa.execute();
 };
@@ -80,11 +80,10 @@ var handlers = {
         this.emit(':tell', speechOutput);
     },
 	'GetSpecificHoroscopeIntent': function () {
-        var filledSlots = delegateSlotCollection.call(this);
 		speechOutput = "";
         starSign = this.event.request.intent.slots.zodiacSign.value;
         // if the user is new, or has not set a star sign yet, set this as their star sign
-        if ( !this.attributes['existingStarSign'] ) {
+        if ( Object.keys(this.attributes).length === 0 ) {
             this.attributes['existingStarSign'] = starSign;
             existingStarSign = this.attributes['existingStarSign'];
         }
@@ -114,26 +113,33 @@ var handlers = {
     },
     'GetZoidicSignFromDateIntent': function () {
         //delegate to Alexa to collect all the required slot values
-        var filledSlots = delegateSlotCollection.call(this);
         var speechOutput = "";
-        compareToDate = this.event.request.intent.slots.date.value;
+        compareToDate = new Date(this.event.request.intent.slots.date.value);
+        var dateStarSign;
         // loop through the star sign dates, if the date lies in the date range then return the relevant star sign
-        var dateStarSign = Object.keys(data.starSignDates).forEach(function(zodiacSign) {
-            dateChecker(zodiacSign);
+        Object.keys(data.starSignDates).some(function(checkStarSign) {
+            if( dateChecker(checkStarSign) ) {
+                // if the user is new, or has not set a star sign yet, set this as their star sign
+                if ( Object.keys(this.attributes).length === 0 ) {
+                    this.attributes['existingStarSign'] = checkStarSign;
+                    existingStarSign = this.attributes['existingStarSign'];
+                }
+                // emit the response, keep daily horoscope open
+                dateStarSign = checkStarSign;
+                return true;
+            }
         });
-        // if the user is new, or has not set a star sign yet, set this as their star sign
-        if ( !this.attributes['existingStarSign'] ) {
-            this.attributes['existingStarSign'] = starSign;
-            existingStarSign = this.attributes['existingStarSign'];
+        if (dateStarSign) {
+            speechOutput = "The star sign for someone born on " + compareToDate.toLocaleString('en-GB', dateOptions) + " is " + dateStarSign;
+            reprompt = "Ask for the star sign of a different date, or, check out your star sign's horoscope.";
+        } else {
+            speechOutput = "I don't quite know that date, please try a Gregorian calendar date.";
+            reprompt = "Ask for the star sign of a different date, or, check out your star sign's horoscope.";
         }
-        // emit the response, keep daily horoscope open
-        speechOutput = "The star sign for someone born on ";
-        reprompt = "Ask for the star sign of a different date, or, check out your star sign's horoscope.";
-        this.emit(":ask", speechOutput + compareToDate + " is " + dateStarSign, reprompt);
+        this.emit(':ask', speechOutput, reprompt);
     },
     'GetCompatibleZodiacSignIntent': function () {
         //delegate to Alexa to collect all the required slot values
-        var filledSlots = delegateSlotCollection.call(this);
         var speechOutput = "";
         //any intent slot variables are listed here for convenience
         var starSignASlot = this.event.request.intent.slots.zodiacSignA.value;
@@ -146,7 +152,6 @@ var handlers = {
         this.emit(":ask", speechOutput);
     },
     'SetUserZodiacSignIntent': function () {
-        var filledSlots = delegateSlotCollection.call(this);
         speechOutput = "Your star sign has been updated to ";
         reprompt = "Which star sign's horoscope would you like to hear, for example, Scorpio's horoscope or my horoscope.";
         // set setStarSign to the slot value that accompanies the SetUserZodiacSignIntent intent
@@ -223,7 +228,9 @@ function dateChecker(zodiacSign) {
 
     var dateRange = data.starSignDates[zodiacSign];
     if (compareToDate >= fromDate && compareToDate <= toDate) {
-        return zodiacSign
+        return true;
+    } else {
+        return false;
     }
 }
 
