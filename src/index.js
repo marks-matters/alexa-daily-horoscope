@@ -18,7 +18,8 @@ var data = {
         'libra':        {'fromDate': '09-23', 'toDate': '10-22'},
         'scorpio':      {'fromDate': '10-23', 'toDate': '11-21'},
         'sagittarius':  {'fromDate': '11-22', 'toDate': '12-21'},
-        'capricorn':    {'fromDate': '12-22', 'toDate': '01-19'},
+        'capricorn':    {'fromDate': '12-22', 'toDate': '12-31'},
+        'capricorn':    {'fromDate': '01-01', 'toDate': '01-19'},
         'aquarius':     {'fromDate': '01-20', 'toDate': '02-18'},
         'pisces':       {'fromDate': '02-19', 'toDate': '03-20'}
     }
@@ -30,17 +31,12 @@ var welcomeOutput = "Which star sign's horoscope would you like to hear?";
 var welcomeReprompt = "I didn't quite catch that, please request a star sign's horoscope, for example, Scorpio's horoscope.";
 var starSign;
 var existingStarSign;
-var compareToDate = new Date();
 var dateOptions = {month: 'long', day: 'numeric', timeZone: 'utc'};
 
-var APP_ID = "amzn1.ask.skill.d373228d-ef5c-4a0c-a005-583c0d25bf11";
+const appId = 'amzn1.ask.skill.d373228d-ef5c-4a0c-a005-583c0d25bf11';
+const AWSregion = 'us-east-1';
+const dbTableName = 'horoscopeUsers_starsign';
 
-var AWSregion = 'us-east-1';
-
-var params = {
-    TableName: 'horoscopeUsers_starsign',
-    Key: {"id": '0'}
-};
  // 2. Skill Code =======================================================================================================
 "use strict";
 var Alexa = require('alexa-sdk');
@@ -52,8 +48,8 @@ AWS.config.update({
 
 exports.handler = function(event, context, callback) {
     var alexa = Alexa.handler(event, context);
-    alexa.APP_ID = APP_ID;
-    alexa.dynamoDBTableName = 'horoscopeUsers_starsign'; //TODO is this required once table exists?
+//    alexa.appId = appId;
+    alexa.dynamoDBTableName = dbTableName;
     alexa.registerHandlers(handlers);
     alexa.execute();
 };
@@ -88,68 +84,68 @@ var handlers = {
             existingStarSign = this.attributes['existingStarSign'];
         }
         // get the horoscope of the star sign
-        getHoroscope( (reading) => {
-            speechOutput = reading;
+        getHoroscope( (text) => {
+            speechOutput = text;
             reprompt = "Which other horoscope would you like to hear, for example, Scorpio's horoscope or my horoscope?";
             this.emit(':ask', speechOutput, reprompt);
         });
     },
     'GetUserHoroscopeIntent': function () {
         speechOutput = "";
-        // loading any previous session attributes from Dynamo into the session attributes
-        if( this.attributes['existingStarSign'] ) {   // user has already set their star sign
+        // user has not set their star sign yet
+        if( Object.keys(this.attributes).length === 0 ) {
+            speechOutput = "What is your star sign?"
+            reprompt = "Save your star sign for convenience, for example, my star sign is Scorpio."
+            this.emit(':ask', speechOutput, reprompt);
+        // user has already set their star sign
+        } else {
             starSign = this.attributes['existingStarSign'];
             existingStarSign = this.attributes['existingStarSign'];
             getHoroscope( (reading) => {
                 speechOutput = reading;
-                reprompt = "Which other horoscope would you like to hear, for example, Scorpio's horoscope or my horoscope?";
+                reprompt = "Which other horoscope would you like to hear, for example, Cancer's horoscope or my horoscope?";
                 this.emit(':ask', speechOutput, reprompt);
             });
-        } else {    // user does not have their star sign set yet
-            speechOutput = "What is your star sign?"
-            reprompt = "Save your star sign for convenience, for example, my star sign is Scorpio."
-            this.emit(':ask', speechOutput, reprompt);
         }
     },
     'GetZoidicSignFromDateIntent': function () {
-        //delegate to Alexa to collect all the required slot values
         var speechOutput = "";
+        // collect the date slot value
         compareToDate = new Date(this.event.request.intent.slots.date.value);
         var dateStarSign;
         // loop through the star sign dates, if the date lies in the date range then return the relevant star sign
-        Object.keys(data.starSignDates).some(function(checkStarSign) {
+        Object.keys(data.starSignDates).some( function(checkStarSign) {
             if( dateChecker(checkStarSign) ) {
-                // if the user is new, or has not set a star sign yet, set this as their star sign
-                if ( Object.keys(this.attributes).length === 0 ) {
-                    this.attributes['existingStarSign'] = checkStarSign;
-                    existingStarSign = this.attributes['existingStarSign'];
-                }
-                // emit the response, keep daily horoscope open
                 dateStarSign = checkStarSign;
-                return true;
+                return true;    // quit loop
             }
         });
-        if (dateStarSign) {
+
+        if ( dateStarSign  ) {
+            // if the user is new, or has not set a star sign yet, set this as their star sign
+            if ( Object.keys(this.attributes).length === 0 ) {
+                this.attributes['existingStarSign'] = dateStarSign;
+                existingStarSign = this.attributes['existingStarSign'];
+            }
             speechOutput = "The star sign for someone born on " + compareToDate.toLocaleString('en-GB', dateOptions) + " is " + dateStarSign;
             reprompt = "Ask for the star sign of a different date, or, check out your star sign's horoscope.";
         } else {
             speechOutput = "I don't quite know that date, please try a Gregorian calendar date.";
             reprompt = "Ask for the star sign of a different date, or, check out your star sign's horoscope.";
         }
+        // emit the response, keep daily horoscope open
         this.emit(':ask', speechOutput, reprompt);
     },
     'GetCompatibleZodiacSignIntent': function () {
-        //delegate to Alexa to collect all the required slot values
         var speechOutput = "";
-        //any intent slot variables are listed here for convenience
+
         var starSignASlot = this.event.request.intent.slots.zodiacSignA.value;
         console.log(starSignASlot);
         var starSignBSlot = this.event.request.intent.slots.zodiacSignB.value;
         console.log(starSignBSlot);
 
-        //Your custom intent handling goes here
-        speechOutput = "The star sign for ";
-        this.emit(":ask", speechOutput);
+        speechOutput = "This functionality is still being built";
+        this.emit(":tell", speechOutput);
     },
     'SetUserZodiacSignIntent': function () {
         speechOutput = "Your star sign has been updated to ";
@@ -179,43 +175,30 @@ var handlers = {
 // 3. Functions  =================================================================================================
 
 function getHoroscope(callback) {
-    var http = require('http');
-    var reading = '';
+    var http = require('https');
     var hsOptions = {
-        host: 'widgets.fabulously40.com',
-        path: `/horoscope.json?sign=${starSign}`,
-        method: 'GET'
+        method: "GET",
+        hostname: "new.theastrologer.com",
+        port: null,
+        path: "/" + starSign + "/"
     };
-
     var req = http.request(hsOptions, (res) => {
-        res.setEncoding('utf8');
-        var returnData = "";
+        //res.setEncoding('utf8');
+        var body = "";
 
         res.on('data', (chunk) => {
-            returnData = returnData + chunk;
+            body += chunk;
         });
         res.on('end', () => {
-            reading = JSON.parse(returnData).horoscope.horoscope;
+            var indexTodayDiv = body.indexOf('<div class="row daily-meta">', body.indexOf('<div class="row daily-meta">') + 1);
+            var relevantText = body.substring(indexTodayDiv - 800, indexTodayDiv);
+            var indexPStart = relevantText.indexOf('<p>');
+            var indexPEnd = relevantText.indexOf('</p>');
+            var reading = relevantText.substring(indexPStart + 3, indexPEnd);
             callback(reading);
         });
     });
     req.end();
-}
-
-// not currently used
-function readUserStarSign(callback) {
-    var AWS = require('aws-sdk');
-    AWS.config.update({region: AWSregion});
-    var docClient = new AWS.DynamoDB.DocumentClient();
-
-    docClient.get(params, (err, data) => {
-        if (err) {
-            console.error("Unable to read item. Error JSON:", JSON.stringify(err, null, 2));
-        } else {
-            console.log("GetItem succeeded:", JSON.stringify(data, null, 2));
-            callback(data.Item.existingStarSign);
-        }
-    });
 }
 
 function dateChecker(zodiacSign) {
@@ -231,44 +214,5 @@ function dateChecker(zodiacSign) {
         return true;
     } else {
         return false;
-    }
-}
-
-function isSlotValid(request, slotName){
-    var slot = request.intent.slots[slotName];
-    console.log("request = "+JSON.stringify(request)); //uncomment if you want to see the request
-    var slotValue;
-
-    //if we have a slot, get the text and store it into speechOutput
-    if (slot && slot.value) {
-        //we have a value in the slot
-        slotValue = slot.value.toLowerCase();
-        return slotValue;
-    } else {
-        //we didn't get a value in the slot.
-        return false;
-    }
-}
-
-function delegateSlotCollection(){
-  console.log("in delegateSlotCollection");
-  console.log("current dialogState: " + this.event.request.dialogState);
-    if (this.event.request.dialogState === "STARTED") {
-      console.log("in Beginning");
-	  var pdatedIntent = this.event.request.intent;
-      //optionally pre-fill slots: update the intent object with slot values for which
-      //you have defaults, then return Dialog.Delegate with this updated intent
-      // in the updatedIntent property
-      this.emit(":delegate", updatedIntent);
-    } else if (this.event.request.dialogState !== "COMPLETED") {
-      console.log("in not completed");
-      // return a Dialog.Delegate directive with no updatedIntent property.
-      this.emit(":delegate");
-    } else {
-      console.log("in completed");
-      console.log("returning: "+ JSON.stringify(this.event.request.intent));
-      // Dialog is now complete and all required slots should be filled,
-      // so call your normal intent handler.
-      return this.event.request.intent;
     }
 }
