@@ -33,7 +33,7 @@ var starSign;
 var existingStarSign;
 var dateOptions = {month: 'long', day: 'numeric', timeZone: 'utc'};
 
-const appId = 'amzn1.ask.skill.d373228d-ef5c-4a0c-a005-583c0d25bf11';
+const appId = ''; // TODO insert App ID here
 const AWSregion = 'us-east-1';
 const dbTableName = 'horoscopeUsers_starsign';
 
@@ -48,7 +48,7 @@ AWS.config.update({
 
 exports.handler = function(event, context, callback) {
     var alexa = Alexa.handler(event, context);
-//    alexa.appId = appId;
+    alexa.appId = appId;
     alexa.dynamoDBTableName = dbTableName;
     alexa.registerHandlers(handlers);
     alexa.execute();
@@ -76,7 +76,8 @@ var handlers = {
         this.emit(':tell', speechOutput);
     },
 	'GetSpecificHoroscopeIntent': function () {
-		speechOutput = "";
+        speechOutput = "";
+        reprompt = "";
         starSign = this.event.request.intent.slots.zodiacSign.value;
         // if the user is new, or has not set a star sign yet, set this as their star sign
         if ( Object.keys(this.attributes).length === 0 ) {
@@ -85,13 +86,19 @@ var handlers = {
         }
         // get the horoscope of the star sign
         getHoroscope( (text) => {
-            speechOutput = text;
-            reprompt = "Which other horoscope would you like to hear, for example, Scorpio's horoscope or my horoscope?";
+            if ( text ) {
+                speechOutput = text + " Which other horoscope would you like to hear?";
+                reprompt = "You can hear daily horoscopes for all star signs, just ask for, Scorpio's horoscope or my horoscope?";
+            } else {
+                speechOutput = "There appears to be a ploblem with my crystal ball! Try again, or find out the star sign for a date";
+                reprompt = "Ask for the star sign of a specific date.";
+            }
             this.emit(':ask', speechOutput, reprompt);
         });
     },
     'GetUserHoroscopeIntent': function () {
         speechOutput = "";
+        reprompt = "";
         // user has not set their star sign yet
         if( Object.keys(this.attributes).length === 0 ) {
             speechOutput = "What is your star sign?"
@@ -102,14 +109,15 @@ var handlers = {
             starSign = this.attributes['existingStarSign'];
             existingStarSign = this.attributes['existingStarSign'];
             getHoroscope( (reading) => {
-                speechOutput = reading;
-                reprompt = "Which other horoscope would you like to hear, for example, Cancer's horoscope or my horoscope?";
+                speechOutput = reading + " Which other horoscope would you like to hear?";;
+                reprompt = "You can hear daily horoscopes for all star signs, just ask for, Cancer's horoscope or my horoscope?";
                 this.emit(':ask', speechOutput, reprompt);
             });
         }
     },
     'GetZoidicSignFromDateIntent': function () {
-        var speechOutput = "";
+        speechOutput = "";
+        reprompt = "";
         // collect the date slot value
         compareToDate = new Date(this.event.request.intent.slots.date.value);
         var dateStarSign;
@@ -121,50 +129,54 @@ var handlers = {
             }
         });
 
-        if ( dateStarSign  ) {
+        if ( dateStarSign ) {
             // if the user is new, or has not set a star sign yet, set this as their star sign
             if ( Object.keys(this.attributes).length === 0 ) {
                 this.attributes['existingStarSign'] = dateStarSign;
                 existingStarSign = this.attributes['existingStarSign'];
             }
-            speechOutput = "The star sign for someone born on " + compareToDate.toLocaleString('en-GB', dateOptions) + " is " + dateStarSign;
+            speechOutput = "The star sign for someone born on " + compareToDate.toLocaleString('en-GB', dateOptions) + " is " + dateStarSign + ". Which other date would you like to know?";
             reprompt = "Ask for the star sign of a different date, or, check out your star sign's horoscope.";
         } else {
-            speechOutput = "I don't quite know that date, please try a Gregorian calendar date.";
-            reprompt = "Ask for the star sign of a different date, or, check out your star sign's horoscope.";
+            speechOutput = "Hmmm, I don't quite know that date, please try a Gregorian calendar date.";
+            reprompt = "Ask for the star sign of a different date, for example, someone born today, or the star sign for January, the third. Or, you can check out any star sign's horoscope.";
         }
         // emit the response, keep daily horoscope open
         this.emit(':ask', speechOutput, reprompt);
     },
     'GetCompatibleZodiacSignIntent': function () {
-        var speechOutput = "";
+        speechOutput = "";
+        reprompt = "";
 
         var starSignASlot = this.event.request.intent.slots.zodiacSignA.value;
-        console.log(starSignASlot);
         var starSignBSlot = this.event.request.intent.slots.zodiacSignB.value;
-        console.log(starSignBSlot);
 
-        speechOutput = "This functionality is still being built";
-        this.emit(":tell", speechOutput);
+        speechOutput = "Uh oh, this functionality is still being built! In the meantime, you can hear any star sign's horoscope.";
+        reprompt = "Which star sign's horoscope would you like to hear, for example, Scorpio's horoscope.";
+        this.emit(":ask", speechOutput, reprompt);
     },
     'SetUserZodiacSignIntent': function () {
-        speechOutput = "Your star sign has been updated to ";
-        reprompt = "Which star sign's horoscope would you like to hear, for example, Scorpio's horoscope or my horoscope.";
+        speechOutput = "";
+        reprompt = "";
         // set setStarSign to the slot value that accompanies the SetUserZodiacSignIntent intent
         var setStarSign = this.event.request.intent.slots.inputZodiacSign.value;
         this.attributes['existingStarSign'] = setStarSign;
         existingStarSign = this.attributes['existingStarSign'];
+        speechOutput = "Your star sign has been updated to " + existingStarSign + ". Which horoscope would you like to hear?";
+        reprompt = "Which star sign's horoscope would you like to hear, for example, Scorpio's horoscope or my horoscope.";
         // emit the response, keep daily horoscope open
-        this.emit(':ask', speechOutput + existingStarSign + '.', reprompt);
+        this.emit(':ask', speechOutput, reprompt);
     },
     'GetUserZodiacSignIntent': function () {
+        speechOutput = "";
+        reprompt = "";
         if( this.attributes['existingStarSign'] ) {
-            speechOutput = "Your star sign is set to ";
-            reprompt = "If this is not your star sign, you're welcome to change it, just ask.";
             existingStarSign = this.attributes['existingStarSign'];
-            this.emit(':ask', speechOutput + existingStarSign, reprompt);
+            speechOutput = "Your star sign is set to " + existingStarSign + ". You're welcome to change it, or, you can hear your horoscope for the day.";
+            reprompt = "You can change your saved star sign by asking, for example, set my star sign to Scorpio.";
+            this.emit(':ask', speechOutput, reprompt);
         } else {
-            speechOutput = "My crystal ball appears faulty, please enlighten me, what is your name and star sign?";
+            speechOutput = "My crystal ball appears faulty, please enlighten me, what is your star sign?";
             reprompt = "Save your star sign for convenience, for example, my star sign is Scorpio.";
             this.emit(':ask', speechOutput, reprompt);
         }
