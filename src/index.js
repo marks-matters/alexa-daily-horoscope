@@ -88,7 +88,7 @@ var handlers = {
         getHoroscope( (text) => {
             if ( text ) {
                 speechOutput = text + " Which other horoscope would you like to hear?";
-                reprompt = "You can hear daily horoscopes for all star signs, just ask for, Scorpio's horoscope or my horoscope?";
+                reprompt = "You can hear daily horoscopes for all star signs, just ask for, Scorpio's horoscope, or, my horoscope?";
             } else {
                 speechOutput = "There appears to be a ploblem with my crystal ball! Try again, or find out the star sign for a date";
                 reprompt = "Ask for the star sign of a specific date.";
@@ -110,7 +110,7 @@ var handlers = {
             existingStarSign = this.attributes['existingStarSign'];
             getHoroscope( (reading) => {
                 speechOutput = reading + " Which other horoscope would you like to hear?";;
-                reprompt = "You can hear daily horoscopes for all star signs, just ask for, Cancer's horoscope or my horoscope?";
+                reprompt = "You can hear daily horoscopes for all star signs, just ask for, Cancer's horoscope, or, my horoscope?";
                 this.emit(':ask', speechOutput, reprompt);
             });
         }
@@ -144,6 +144,46 @@ var handlers = {
         // emit the response, keep daily horoscope open
         this.emit(':ask', speechOutput, reprompt);
     },
+    'GetHoroscopeFromDateIntent': function () {
+        speechOutput = "";
+        reprompt = "";
+        // collect the date slot value
+        horoscopeDateRequested = new Date(this.event.request.intent.slots.date.value);
+        var dateStarSign;
+        // loop through the star sign dates, if the date lies in the date range then return the relevant star sign
+        Object.keys(data.starSignDates).some( function(horoscopeDateRequested) {
+            if( dateChecker(horoscopeDateRequested) ) {
+                dateStarSign = horoscopeDateRequested;
+                return true;    // quit loop
+            }
+        });
+        // check that the star sign was returned correctly from the date
+        if ( dateStarSign ) {
+            // get the horoscope for the star sign
+            starSign = dateStarSign;
+            getHoroscope( (text) => {
+                // check that the horoscope was returned correctly for the star sign
+                if ( text ) {
+                    // if the user is new, or has not set a star sign yet, set this as their star sign
+                    if ( Object.keys(this.attributes).length === 0 ) {
+                        this.attributes['existingStarSign'] = dateStarSign;
+                        existingStarSign = this.attributes['existingStarSign'];
+                    }
+                    speechOutput = dateStarSign + ". " + text + ". What else would you like to hear?";
+                    reprompt = "Ask for the horoscope of a different date of birth, or, check out any star sign's horoscope.";
+                } else {
+                    speechOutput = "There appears to be a ploblem with my crystal ball! Try again, or, discover the star sign for any date.";
+                    reprompt = "You can ask for the horoscope, or, star sign of a specific birthday.";
+                }
+                this.emit(':ask', speechOutput, reprompt);
+            });
+        } else {
+            speechOutput = "Hmmm, I don't quite know that date, please try a Gregorian calendar date.";
+            reprompt = "Ask for the horoscope of a certain date of birth, for example, someone born today, or, the horoscope for January, the third. Or, you can check out any star sign's horoscope.";
+            // emit the response, keep daily horoscope open
+            this.emit(':ask', speechOutput, reprompt);
+        }
+    },
     'GetCompatibleZodiacSignIntent': function () {
         speechOutput = "";
         reprompt = "";
@@ -163,7 +203,7 @@ var handlers = {
         this.attributes['existingStarSign'] = setStarSign;
         existingStarSign = this.attributes['existingStarSign'];
         speechOutput = "Your star sign has been updated to " + existingStarSign + ". Which horoscope would you like to hear?";
-        reprompt = "Which star sign's horoscope would you like to hear, for example, Scorpio's horoscope or my horoscope.";
+        reprompt = "Which star sign's horoscope would you like to hear, for example, Scorpio's horoscope, or, my horoscope.";
         // emit the response, keep daily horoscope open
         this.emit(':ask', speechOutput, reprompt);
     },
