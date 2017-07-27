@@ -23,19 +23,19 @@ var data = {
         'aquarius':     {'fromDate': '01-20', 'toDate': '02-18'},
         'pisces':       {'fromDate': '02-19', 'toDate': '03-20'}
     }
-};
+}
+    ,speechOutput = ''
+    ,reprompt = ''
+    ,welcomeOutput = "Which star sign's horoscope would you like to hear?"
+    ,welcomeReprompt = "I didn't quite catch that, please request a star sign's horoscope, for example, Scorpio's horoscope."
+    ,starSign
+    ,existingStarSign
+    ,compareToDate = new Date()
+    ,dateOptions = {month: 'long', day: 'numeric', timeZone: 'utc'};
 
-var speechOutput = '';
-var reprompt;
-var welcomeOutput = "Which star sign's horoscope would you like to hear?";
-var welcomeReprompt = "I didn't quite catch that, please request a star sign's horoscope, for example, Scorpio's horoscope.";
-var starSign;
-var existingStarSign;
-var dateOptions = {month: 'long', day: 'numeric', timeZone: 'utc'};
-
-const appId = ''; // TODO insert App ID here
-const AWSregion = 'us-east-1';
-const dbTableName = 'horoscopeUsers_starsign';
+const appId = '' // TODO insert App ID here
+    ,AWSregion = 'us-east-1'
+    ,dbTableName = 'horoscopeUsers_starsign';
 
  // 2. Skill Code =======================================================================================================
 "use strict";
@@ -119,7 +119,7 @@ var handlers = {
         speechOutput = "";
         reprompt = "";
         // collect the date slot value
-        compareToDate = new Date(this.event.request.intent.slots.date.value);
+        compareToDate = new Date(this.event.request.intent.slots.dateForZodiacSign.value);
         var dateStarSign;
         // loop through the star sign dates, if the date lies in the date range then return the relevant star sign
         Object.keys(data.starSignDates).some( function(checkStarSign) {
@@ -148,12 +148,12 @@ var handlers = {
         speechOutput = "";
         reprompt = "";
         // collect the date slot value
-        horoscopeDateRequested = new Date(this.event.request.intent.slots.date.value);
+        compareToDate = new Date(this.event.request.intent.slots.dateForHoroscope.value);
         var dateStarSign;
         // loop through the star sign dates, if the date lies in the date range then return the relevant star sign
-        Object.keys(data.starSignDates).some( function(horoscopeDateRequested) {
-            if( dateChecker(horoscopeDateRequested) ) {
-                dateStarSign = horoscopeDateRequested;
+        Object.keys(data.starSignDates).some( function(checkStarSign) {
+            if( dateChecker(checkStarSign) ) {
+                dateStarSign = checkStarSign;
                 return true;    // quit loop
             }
         });
