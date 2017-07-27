@@ -27,7 +27,7 @@ var data = {
     ,speechOutput = ''
     ,reprompt = ''
     ,welcomeOutput = "Which star sign's horoscope would you like to hear?"
-    ,welcomeReprompt = "I didn't quite catch that, please request a star sign's horoscope, for example, Scorpio's horoscope."
+    ,welcomeReprompt = "I didn't quite catch that, please request a star sign's horoscope, for example, Scorpio's horoscope, or, ask for help to discover additional horoscope functionality."
     ,starSign
     ,existingStarSign
     ,compareToDate = new Date()
@@ -59,8 +59,8 @@ var handlers = {
           this.emit(':ask', welcomeOutput, welcomeReprompt);
     },
 	'AMAZON.HelpIntent': function () {
-        speechOutput = "Just say the name of the star sign for which horoscope you would like to hear.";
-        reprompt = "Try something like, what is scoprio's horoscope?";
+        speechOutput = "You can request horoscope readings by star sign, get the star sign or horoscope for someone born on a specific date, or, save a star sign to your account and get your daily, updated horoscope by asking for, my daily horoscope.";
+        reprompt = "Try something like, what is Scorpio's horoscope?";
         this.emit(':ask', speechOutput, reprompt);
     },
     'AMAZON.CancelIntent': function () {
@@ -90,8 +90,8 @@ var handlers = {
                 speechOutput = text + " Which other horoscope would you like to hear?";
                 reprompt = "You can hear daily horoscopes for all star signs, just ask for, Scorpio's horoscope, or, my horoscope?";
             } else {
-                speechOutput = "There appears to be a ploblem with my crystal ball! Try again, or find out the star sign for a date";
-                reprompt = "Ask for the star sign of a specific date.";
+                speechOutput = "There appears to be a ploblem with my crystal ball! Try again, or find out the star sign or horoscope for a specific birthdate.";
+                reprompt = "You can ask for the star sign or horoscope of a specific date, or, hear the horoscope for a specific star sign.";
             }
             this.emit(':ask', speechOutput, reprompt);
         });
@@ -101,16 +101,16 @@ var handlers = {
         reprompt = "";
         // user has not set their star sign yet
         if( Object.keys(this.attributes).length === 0 ) {
-            speechOutput = "What is your star sign?"
-            reprompt = "Save your star sign for convenience, for example, my star sign is Scorpio."
+            speechOutput = "We have not associated a star sign to your account, save a star sign to your account to get your daily, updated horoscope.";
+            reprompt = "Save your star sign for convenience, for example, my star sign is Scorpio.";
             this.emit(':ask', speechOutput, reprompt);
         // user has already set their star sign
         } else {
             starSign = this.attributes['existingStarSign'];
             existingStarSign = this.attributes['existingStarSign'];
             getHoroscope( (reading) => {
-                speechOutput = reading + " Which other horoscope would you like to hear?";;
-                reprompt = "You can hear daily horoscopes for all star signs, just ask for, Cancer's horoscope, or, my horoscope?";
+                speechOutput = starSign + ". " + reading + " You can hear any other star sign's horoscope, or, change your saved star sign.";
+                reprompt = "You can hear daily horoscopes for all star signs, just ask for, Cancer's horoscope. Or, ask for help to discover additional horoscope functionality?";
                 this.emit(':ask', speechOutput, reprompt);
             });
         }
@@ -135,8 +135,8 @@ var handlers = {
                 this.attributes['existingStarSign'] = dateStarSign;
                 existingStarSign = this.attributes['existingStarSign'];
             }
-            speechOutput = "The star sign for someone born on " + compareToDate.toLocaleString('en-GB', dateOptions) + " is " + dateStarSign + ". Which other date would you like to know?";
-            reprompt = "Ask for the star sign of a different date, or, check out your star sign's horoscope.";
+            speechOutput = "The star sign for someone born on " + compareToDate.toLocaleString('en-GB', dateOptions) + " is " + dateStarSign + ". Which other date, or, which other star sign's horoscope would you like to know?";
+            reprompt = "Ask for the star sign of a different date of birth, or, check out any star sign's horoscope.";
         } else {
             speechOutput = "Hmmm, I don't quite know that date, please try a Gregorian calendar date.";
             reprompt = "Ask for the star sign of a different date, for example, someone born today, or the star sign for January, the third. Or, you can check out any star sign's horoscope.";
@@ -169,17 +169,17 @@ var handlers = {
                         this.attributes['existingStarSign'] = dateStarSign;
                         existingStarSign = this.attributes['existingStarSign'];
                     }
-                    speechOutput = dateStarSign + ". " + text + ". What else would you like to hear?";
+                    speechOutput = dateStarSign + ". " + text + " Would you like to hear the horoscope, or, the star sign for a different date?";
                     reprompt = "Ask for the horoscope of a different date of birth, or, check out any star sign's horoscope.";
                 } else {
                     speechOutput = "There appears to be a ploblem with my crystal ball! Try again, or, discover the star sign for any date.";
-                    reprompt = "You can ask for the horoscope, or, star sign of a specific birthday.";
+                    reprompt = "You can ask for the horoscope, or, star sign for a specific birthday.";
                 }
                 this.emit(':ask', speechOutput, reprompt);
             });
         } else {
             speechOutput = "Hmmm, I don't quite know that date, please try a Gregorian calendar date.";
-            reprompt = "Ask for the horoscope of a certain date of birth, for example, someone born today, or, the horoscope for January, the third. Or, you can check out any star sign's horoscope.";
+            reprompt = "Ask for the horoscope of a specific date of birth, for example, someone born today, or, the horoscope for January, the third. Or, you can check out any star sign's horoscope.";
             // emit the response, keep daily horoscope open
             this.emit(':ask', speechOutput, reprompt);
         }
@@ -192,7 +192,7 @@ var handlers = {
         var starSignBSlot = this.event.request.intent.slots.zodiacSignB.value;
 
         speechOutput = "Uh oh, this functionality is still being built! In the meantime, you can hear any star sign's horoscope.";
-        reprompt = "Which star sign's horoscope would you like to hear, for example, Scorpio's horoscope.";
+        reprompt = "Which star sign's horoscope would you like to hear, for example, Scorpio's horoscope? Or, ask for help to discover additional horoscope functionality.";
         this.emit(":ask", speechOutput, reprompt);
     },
     'SetUserZodiacSignIntent': function () {
@@ -202,7 +202,7 @@ var handlers = {
         var setStarSign = this.event.request.intent.slots.inputZodiacSign.value;
         this.attributes['existingStarSign'] = setStarSign;
         existingStarSign = this.attributes['existingStarSign'];
-        speechOutput = "Your star sign has been updated to " + existingStarSign + ". Which horoscope would you like to hear?";
+        speechOutput = "Your star sign has been updated to " + existingStarSign + ". Would you like to hear your horoscope, or, you can hear any other star sign's horoscope?";
         reprompt = "Which star sign's horoscope would you like to hear, for example, Scorpio's horoscope, or, my horoscope.";
         // emit the response, keep daily horoscope open
         this.emit(':ask', speechOutput, reprompt);
@@ -216,8 +216,8 @@ var handlers = {
             reprompt = "You can change your saved star sign by asking, for example, set my star sign to Scorpio.";
             this.emit(':ask', speechOutput, reprompt);
         } else {
-            speechOutput = "My crystal ball appears faulty, please enlighten me, what is your star sign?";
-            reprompt = "Save your star sign for convenience, for example, my star sign is Scorpio.";
+            speechOutput = "My crystal ball appears faulty, please enlighten me, what would you like to save as your star sign, or, you can ask for the horoscope of any other star sign?";
+            reprompt = "Save your star sign for convenience, for example, my star sign is Scorpio, and have easy access to your daily, updated horoscope.";
             this.emit(':ask', speechOutput, reprompt);
         }
 
