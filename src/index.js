@@ -8,22 +8,23 @@
 
  // 1. Text strings =====================================================================================================
 var data = {
-    'starSignDates': {
-        'aries':        {'fromDate': '03-21', 'toDate': '04-19'},
-        'taurus':       {'fromDate': '04-20', 'toDate': '05-20'},
-        'gemini':       {'fromDate': '05-21', 'toDate': '06-20'},
-        'cancer':       {'fromDate': '06-21', 'toDate': '07-22'},
-        'leo':          {'fromDate': '07-23', 'toDate': '08-22'},
-        'virgo':        {'fromDate': '08-23', 'toDate': '09-22'},
-        'libra':        {'fromDate': '09-23', 'toDate': '10-22'},
-        'scorpio':      {'fromDate': '10-23', 'toDate': '11-21'},
-        'sagittarius':  {'fromDate': '11-22', 'toDate': '12-21'},
-        'capricorn':    {'fromDate': '12-22', 'toDate': '12-31'},
-        'capricorn':    {'fromDate': '01-01', 'toDate': '01-19'},
-        'aquarius':     {'fromDate': '01-20', 'toDate': '02-18'},
-        'pisces':       {'fromDate': '02-19', 'toDate': '03-20'}
+        'starSignDates': {
+            'aries':        {'fromDate': '03-21', 'toDate': '04-19'},
+            'taurus':       {'fromDate': '04-20', 'toDate': '05-20'},
+            'gemini':       {'fromDate': '05-21', 'toDate': '06-20'},
+            'cancer':       {'fromDate': '06-21', 'toDate': '07-22'},
+            'leo':          {'fromDate': '07-23', 'toDate': '08-22'},
+            'virgo':        {'fromDate': '08-23', 'toDate': '09-22'},
+            'libra':        {'fromDate': '09-23', 'toDate': '10-22'},
+            'scorpio':      {'fromDate': '10-23', 'toDate': '11-21'},
+            'sagittarius':  {'fromDate': '11-22', 'toDate': '12-21'},
+            'capricorn':    {'fromDate': '12-22', 'toDate': '12-31'},
+            'capricorn':    {'fromDate': '01-01', 'toDate': '01-19'},
+            'aquarius':     {'fromDate': '01-20', 'toDate': '02-18'},
+            'pisces':       {'fromDate': '02-19', 'toDate': '03-20'}
+        }
     }
-}
+    ,horoscopeData = {}
     ,speechOutput = ''
     ,reprompt = ''
     ,welcomeOutput = "Which star sign's horoscope would you like to hear?"
@@ -31,11 +32,45 @@ var data = {
     ,starSign
     ,existingStarSign
     ,compareToDate = new Date()
+    ,now = new Date ()
+    ,nowUTC = new Date ( now )
+    ,missingStarSigns = []
     ,dateOptions = {month: 'long', day: 'numeric', timeZone: 'utc'};
+
+nowUTC.setHours ( now.getHours() - 1 );
+nowUTC = nowUTC.toISOString();
+var today = nowUTC.substring(0,10);
+var paramsQueryAllReadings = {
+    TableName : "horoscope_daily",
+    KeyConditionExpression : "#dt = :today",
+    IndexName : 'date-index',
+    ScanIndexForward : false,
+    ExpressionAttributeNames : {
+        "#dt" : "date"
+    },
+    ExpressionAttributeValues : {
+        ":today" : today
+    }
+};
 
 const appId = '' // TODO insert App ID here
     ,AWSregion = 'us-east-1'
-    ,dbTableName = 'horoscopeUsers_starsign';
+    ,sessionEventsTableName = 'horoscopeUsers_starsign'
+    ,starSignHoroscopeTableName = 'horoscope_reading_daily'
+    ,allStarSigns = [
+        'aries',
+        'taurus',
+        'gemini',
+        'cancer',
+        'leo',
+        'virgo',
+        'libra',
+        'scorpio',
+        'sagittarius',
+        'capricorn',
+        'aquarius',
+        'pisces'
+    ];
 
  // 2. Skill Code =======================================================================================================
 "use strict";
@@ -49,14 +84,25 @@ AWS.config.update({
 exports.handler = function(event, context, callback) {
     var alexa = Alexa.handler(event, context);
     alexa.appId = appId;
-    alexa.dynamoDBTableName = dbTableName;
+    alexa.dynamoDBTableName = sessionEventsTableName;
     alexa.registerHandlers(handlers);
     alexa.execute();
 };
 
 var handlers = {
     'LaunchRequest': function () {
-          this.emit(':ask', welcomeOutput, welcomeReprompt);
+        // if there is no stored horoscope
+        if ( Object.keys(this.attributes).length === 0 ) {
+            this.emit(':ask', welcomeOutput, welcomeReprompt);
+        } else {
+            starSign = this.attributes['existingStarSign'];
+            existingStarSign = this.attributes['existingStarSign'];
+            getHoroscope( starSign, (reading) => {
+                speechOutput = "Your daily horoscope for " + starSign + " is. " + reading + " You can hear other horoscopes, or, change your saved star sign. Just say stop to end.";
+                reprompt = "You can hear daily horoscopes for all star signs, just ask for, Cancer's horoscope. Or, ask for help to discover additional horoscope functionality.";
+                this.emit(':ask', speechOutput, reprompt);
+            });
+        }
     },
 	'AMAZON.HelpIntent': function () {
         speechOutput = "You can request horoscope readings by star sign, get the star sign or horoscope for someone born on a specific date, or, save a star sign to your account and get your daily, updated horoscope by asking for, my daily horoscope.";
@@ -64,16 +110,17 @@ var handlers = {
         this.emit(':ask', speechOutput, reprompt);
     },
     'AMAZON.CancelIntent': function () {
+        //TODO random goobye words
         speechOutput = 'Goodbye';
         this.emit(':tell', speechOutput);
     },
     'AMAZON.StopIntent': function () {
+        //TODO random goobye words
         speechOutput = 'Goodbye';
         this.emit(':tell', speechOutput);
     },
     'SessionEndedRequest': function () {
-        speechOutput = 'Goodbye';
-        this.emit(':tell', speechOutput);
+        this.emit(':saveState', true);
     },
 	'GetSpecificHoroscopeIntent': function () {
         speechOutput = "";
@@ -85,7 +132,7 @@ var handlers = {
             existingStarSign = this.attributes['existingStarSign'];
         }
         // get the horoscope of the star sign
-        getHoroscope( (text) => {
+        getHoroscope( starSign, (text) => {
             if ( text ) {
                 speechOutput = text + " Which other horoscope would you like to hear?";
                 reprompt = "You can hear daily horoscopes for all star signs, just ask for, Scorpio's horoscope, or, my horoscope?";
@@ -108,9 +155,9 @@ var handlers = {
         } else {
             starSign = this.attributes['existingStarSign'];
             existingStarSign = this.attributes['existingStarSign'];
-            getHoroscope( (reading) => {
+            getHoroscope( starSign, (reading) => {
                 speechOutput = starSign + ". " + reading + " You can hear any other star sign's horoscope, or, change your saved star sign.";
-                reprompt = "You can hear daily horoscopes for all star signs, just ask for, Cancer's horoscope. Or, ask for help to discover additional horoscope functionality?";
+                reprompt = "You can hear daily horoscopes for all star signs, just ask for, Cancer's horoscope. Or, ask for help to discover additional horoscope functionality.";
                 this.emit(':ask', speechOutput, reprompt);
             });
         }
@@ -161,7 +208,7 @@ var handlers = {
         if ( dateStarSign ) {
             // get the horoscope for the star sign
             starSign = dateStarSign;
-            getHoroscope( (text) => {
+            getHoroscope( starSign, (text) => {
                 // check that the horoscope was returned correctly for the star sign
                 if ( text ) {
                     // if the user is new, or has not set a star sign yet, set this as their star sign
@@ -226,20 +273,36 @@ var handlers = {
 
 // 3. Functions  =================================================================================================
 
-function getHoroscope(callback) {
+function getStoredHoroscope(callback) {
+    var docClient = new AWS.DynamoDB.DocumentClient();
+    var params = paramsQueryAllReadings;
+    console.log("Made it to getStoredHoroscope");
+    docClient.query(params, (err, data) => {
+        if (err) {
+            console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+            context.fail(JSON.stringify(err, null, 2));
+        } else {
+            console.log("Query succeeded.");
+            callback(data);
+        }
+    })
+}
+
+function downloadHoroscope( downloadStarSign, callback) {
+    console.log("Download script entered");
     var http = require('https');
     var hsOptions = {
         method: "GET",
         hostname: "new.theastrologer.com",
         port: null,
-        path: "/" + starSign + "/"
+        path: "/" + downloadStarSign + "/"
     };
     var req = http.request(hsOptions, (res) => {
         //res.setEncoding('utf8');
         var body = "";
-
         res.on('data', (chunk) => {
             body += chunk;
+            console.log("Chunked for: " + downloadStarSign);
         });
         res.on('end', () => {
             var indexTodayDiv = body.indexOf('<div class="row daily-meta">', body.indexOf('<div class="row daily-meta">') + 1);
@@ -247,10 +310,110 @@ function getHoroscope(callback) {
             var indexPStart = relevantText.indexOf('<p>');
             var indexPEnd = relevantText.indexOf('</p>');
             var reading = relevantText.substring(indexPStart + 3, indexPEnd);
-            callback(reading);
+            console.log("Downloaded: " + downloadStarSign);
+            callback( downloadStarSign, reading );
         });
     });
     req.end();
+}
+
+function updateDBHoroscope( updateStarSign ) {
+    downloadHoroscope( updateStarSign, ( downloadedStarSign, downloadedHoroscope, callback ) => {
+        var docClient = new AWS.DynamoDB.DocumentClient();
+        var params = {
+            TableName : "horoscope_daily",
+            Item : {
+                "zodiac_sign" : downloadedStarSign,
+                "date" : today,
+                "horoscope_reading" : downloadedHoroscope
+            }
+        };
+        docClient.put(params, function(err, data) {
+            if (err) {
+                console.error("Unable to update table. Error:", JSON.stringify(err, null, 2));
+                context.fail(JSON.stringify(err, null, 2));
+            } else {
+                console.log("Update succeeded.");
+                callback(data);
+            }
+        });
+    });
+}
+
+function updateAndReturnHoroscopes (callback) {
+    getStoredHoroscope( ( horoscopes ) => {
+        console.log("got a response from getStoredHoroscope!");
+        for ( eachStarSign of allStarSigns ) {
+            var missing = true;
+            horoscopes.Items.forEach( function( horoscope ) {
+                if ( horoscope.zodiac_sign == eachStarSign ) {
+                    missing = false;
+                }
+            });
+            if ( missing ) {
+                missingStarSigns.push(eachStarSign);
+            }
+        }
+        if ( Object.keys(missingStarSigns.length) === 0 ) {
+            console.log("Callback in updateAndReturnHoroscopes! GOT FULL LIST FIRST TRY");
+            callback(horoscopes);
+        } else {
+            var i = 0;
+            missingStarSigns.forEach( function( eachStarSign ) {
+                updateDBHoroscope(eachStarSign);
+                i += 1;
+                console.log("try: #" + i);
+            });
+            getStoredHoroscope( ( completeHoroscopeList ) => {
+                console.log("Callback in updateAndReturnHoroscopes! FINALLY COMPLETED LIST RETURNED");
+                callback(completeHoroscopeList);
+            });
+        }
+    });
+}
+
+// return the horoscope if cached
+// otherwise, fetch db values for horoscopes for today
+function getHoroscope( retrieveStarSign, callback ) {
+    var reading = '';
+    console.log("retrieveStarSign: " + retrieveStarSign);
+    if ( Object.keys(horoscopeData).length === 0 ) {
+        console.log("beginning of db get");
+        updateAndReturnHoroscopes( (dynamoDBData) => {
+            horoscopeData = dynamoDBData;
+            console.log("horoscopeData: " + horoscopeData);
+            horoscopeData.Items.some( function ( horoscope ) {
+                console.log("horoscope.zodiac_sign: " + horoscope.zodiac_sign);
+                console.log("retrieveStarSign: " + retrieveStarSign);
+                if ( horoscope.zodiac_sign == retrieveStarSign ) {
+                    reading = horoscope.horoscope_reading;
+                    console.log("getHoroscope IF + IF: " + reading);
+                    return true;
+                } else {
+                    reading = "missing fortune";
+                    console.log("getHoroscope IF + ELSE: " + reading);
+                    return false;
+                }
+            });
+            callback(reading);
+        });
+    } else {
+        console.log(horoscopeData);
+        horoscopeData.Items.some( function ( horoscope ) {
+            console.log("horoscope.zodiac_sign: " + horoscope.zodiac_sign);
+            console.log("retrieveStarSign: " + retrieveStarSign);
+            if ( horoscope.zodiac_sign = retrieveStarSign ) {
+                reading = horoscope.horoscope_reading;
+                console.log("getHoroscope ELSE + IF: " + reading);
+                return true;
+            } else {
+                reading = "missing fortune";
+                console.log("getHoroscope ELSE + ELSE: " + reading);
+                return false;
+            }
+        });
+        callback(reading);
+    }
 }
 
 function dateChecker(zodiacSign) {
