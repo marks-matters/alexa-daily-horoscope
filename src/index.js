@@ -278,7 +278,7 @@ function getStoredHoroscope(callback) {
     var params = paramsQueryAllReadings;
     console.log("Made it to getStoredHoroscope");
     docClient.query(params, (err, data) => {
-        if (err) {
+        if ( err ) {
             console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
             context.fail(JSON.stringify(err, null, 2));
         } else {
@@ -288,8 +288,28 @@ function getStoredHoroscope(callback) {
     })
 }
 
-function downloadHoroscope( downloadStarSign, callback) {
-    console.log("Download script entered");
+function horoscopeDownloadAndDbUpdate(horoscopeList, callback) {
+    var missingList = horoscopeList;
+    function getNextReading() {
+        var getStarSign = missingList.splice(0, 1)[0];
+        try {
+            downloadHoroscope( (updateStarSign, scrapedHoroscope) => {
+                updateDBHoroscope(updateStarSign, scrapedHoroscope, (updateStatus) => {
+                    if (missingList.length == 0) {
+                        callback(true);
+                    } else {
+                        getNextReading();
+                    }
+                });
+            });
+        } catch (exception) {
+            callback(exception);
+        }
+    }
+}
+
+function downloadHoroscope(downloadStarSign, callback) {
+    console.log("Download script STARTED");
     var http = require('https');
     var hsOptions = {
         method: "GET",
@@ -306,46 +326,55 @@ function downloadHoroscope( downloadStarSign, callback) {
         });
         res.on('end', () => {
             var indexTodayDiv = body.indexOf('<div class="row daily-meta">', body.indexOf('<div class="row daily-meta">') + 1);
-            var relevantText = body.substring(indexTodayDiv - 800, indexTodayDiv);
+            var relevantText = body.substring(indexTodayDiv - 1000, indexTodayDiv);
             var indexPStart = relevantText.indexOf('<p>');
             var indexPEnd = relevantText.indexOf('</p>');
             var reading = relevantText.substring(indexPStart + 3, indexPEnd);
-            console.log("Downloaded: " + downloadStarSign);
-            callback( downloadStarSign, reading );
+            //TODO improve error handling for unsuccessful download
+            if ( reading.length === 0 )
+                console.log("DOWNLOAD FAILED FOR: " + downloadStarSign);
+                callback(null,null);
+            }
+            else {
+                console.log("Downloaded: " + downloadStarSign);
+                callback(downloadStarSign, reading);
+            }
         });
     });
     req.end();
+    console.log("Download script FINISHED");
 }
 
-function updateDBHoroscope( updateStarSign ) {
-    downloadHoroscope( updateStarSign, ( downloadedStarSign, downloadedHoroscope, callback ) => {
-        var docClient = new AWS.DynamoDB.DocumentClient();
-        var params = {
-            TableName : "horoscope_daily",
-            Item : {
-                "zodiac_sign" : downloadedStarSign,
-                "date" : today,
-                "horoscope_reading" : downloadedHoroscope
-            }
-        };
-        docClient.put(params, function(err, data) {
-            if (err) {
-                console.error("Unable to update table. Error:", JSON.stringify(err, null, 2));
-                context.fail(JSON.stringify(err, null, 2));
-            } else {
-                console.log("Update succeeded.");
-                callback(data);
-            }
-        });
+function updateDBHoroscope(downloadedStarSign, downloadedHoroscope, callback) {
+    console.log("Update script START");
+    var docClient = new AWS.DynamoDB.DocumentClient();
+    var params = {
+        TableName : "horoscope_daily",
+        Item : {
+            "zodiac_sign":       downloadedStarSign,
+            "date":              today,
+            "horoscope_reading": downloadedHoroscope
+        }
+    };
+    docClient.put(params, function(err, data) {
+        if ( err ) {
+            console.error("ERROR WITH TABLE UPDATE: ", JSON.stringify(err, null, 2));
+            callback(false);
+        } else {
+            console.log("SUCCESS: Table updated.");
+            callback(true); //TODO determine purpose
+        }
     });
+    console.log("Update script END");
 }
 
-function updateAndReturnHoroscopes (callback) {
-    getStoredHoroscope( ( horoscopes ) => {
+function downloadAndReturnHoroscopes (callback) {
+    //TODO: what if amazon is down, error handling
+    getStoredHoroscope( (dynamoHoroscopes) => {
         console.log("got a response from getStoredHoroscope!");
         for ( eachStarSign of allStarSigns ) {
             var missing = true;
-            horoscopes.Items.forEach( function( horoscope ) {
+            dynamoHoroscopes.Items.forEach( function(horoscope) {
                 if ( horoscope.zodiac_sign == eachStarSign ) {
                     missing = false;
                 }
@@ -355,18 +384,16 @@ function updateAndReturnHoroscopes (callback) {
             }
         }
         if ( Object.keys(missingStarSigns.length) === 0 ) {
-            console.log("Callback in updateAndReturnHoroscopes! GOT FULL LIST FIRST TRY");
-            callback(horoscopes);
+            console.log("Callback in downloadAndReturnHoroscopes! GOT FULL LIST FIRST TRY");
+            callback(dynamoHoroscopes);
         } else {
-            var i = 0;
-            missingStarSigns.forEach( function( eachStarSign ) {
-                updateDBHoroscope(eachStarSign);
-                i += 1;
-                console.log("try: #" + i);
-            });
-            getStoredHoroscope( ( completeHoroscopeList ) => {
-                console.log("Callback in updateAndReturnHoroscopes! FINALLY COMPLETED LIST RETURNED");
-                callback(completeHoroscopeList);
+            //TODO: fix this
+            //TODO: trying to fix this with insertCollection example
+            horoscopeDownloadAndDbUpdate(missingStarSigns, (scrapeStatus) => {
+                getStoredHoroscope( (completeHoroscopeList) => {
+                    console.log("Callback in downloadAndReturnHoroscopes! SHIT BE WORKING");
+                    callback(completeHoroscopeList);
+                });
             });
         }
     });
@@ -374,15 +401,16 @@ function updateAndReturnHoroscopes (callback) {
 
 // return the horoscope if cached
 // otherwise, fetch db values for horoscopes for today
-function getHoroscope( retrieveStarSign, callback ) {
+function getHoroscope(retrieveStarSign, callback) {
     var reading = '';
     console.log("retrieveStarSign: " + retrieveStarSign);
     if ( Object.keys(horoscopeData).length === 0 ) {
+        // no cached horoscope data
         console.log("beginning of db get");
-        updateAndReturnHoroscopes( (dynamoDBData) => {
+        downloadAndReturnHoroscopes( (dynamoDBData) => {
             horoscopeData = dynamoDBData;
             console.log("horoscopeData: " + horoscopeData);
-            horoscopeData.Items.some( function ( horoscope ) {
+            horoscopeData.Items.some( function (horoscope) {
                 console.log("horoscope.zodiac_sign: " + horoscope.zodiac_sign);
                 console.log("retrieveStarSign: " + retrieveStarSign);
                 if ( horoscope.zodiac_sign == retrieveStarSign ) {
@@ -398,11 +426,12 @@ function getHoroscope( retrieveStarSign, callback ) {
             callback(reading);
         });
     } else {
+        // cached all horoscope data
         console.log(horoscopeData);
-        horoscopeData.Items.some( function ( horoscope ) {
+        horoscopeData.Items.some( function (horoscope) {
             console.log("horoscope.zodiac_sign: " + horoscope.zodiac_sign);
             console.log("retrieveStarSign: " + retrieveStarSign);
-            if ( horoscope.zodiac_sign = retrieveStarSign ) {
+            if ( horoscope.zodiac_sign == retrieveStarSign ) {
                 reading = horoscope.horoscope_reading;
                 console.log("getHoroscope ELSE + IF: " + reading);
                 return true;
