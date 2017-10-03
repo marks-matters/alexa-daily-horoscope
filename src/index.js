@@ -30,12 +30,14 @@ var data = {
     ,welcomeOutput = "Which star sign's horoscope would you like to hear?"
     ,welcomeReprompt = "I didn't quite catch that, please request a star sign's horoscope, for example, Scorpio's horoscope, or, ask for help to discover additional horoscope functionality."
     ,starSign
+    ,starSignBase = ''
+    ,starSignPartner = ''
     ,existingStarSign
     ,compareToDate = new Date()
     ,now = new Date ()
     ,nowUTC = new Date ( now )
     ,missingStarSigns = []
-    ,dateOptions = {month: 'long', day: 'numeric', timeZone: 'utc'};
+    ,dateOptions = {month : 'long', day : 'numeric', timeZone : 'utc'};
 
 nowUTC.setHours ( now.getHours() - 1 );
 nowUTC = nowUTC.toISOString();
@@ -47,6 +49,13 @@ var paramsQueryAllReadings = {
     ScanIndexForward :          false,
     ExpressionAttributeNames :  {"#dt" : "date"},
     ExpressionAttributeValues : {":today" : today}
+};
+var paramsQueryCompatibility = {
+    TableName :                 "zodiac_sign_compatibility",
+    KeyConditionExpression :    "zodiac_sign_base = :star_sign_base AND zodiac_sign_partner = :star_sign_partner",
+    // IndexName :                 'date-index',
+    // ScanIndexForward :          false,
+    ExpressionAttributeValues : {":star_sign_base" : starSignBase, ":star_sign_partner" : starSignPartner}
 };
 
 const appId = '' // TODO insert App ID here
@@ -93,13 +102,13 @@ var handlers = {
             existingStarSign = this.attributes['existingStarSign'];
             getHoroscope( starSign, (reading) => {
                 speechOutput = "Your daily horoscope for " + starSign + " is. " + reading + " You can hear other horoscopes, or, change your saved star sign. Just say stop to end.";
-                reprompt = "You can hear daily horoscopes for all star signs, just ask for, Cancer's horoscope. Or, ask for help to discover additional horoscope functionality.";
+                reprompt = "Welcome! You can hear daily horoscopes for all star signs, just ask for, Cancer's horoscope. Or, ask for help to discover additional horoscope functionality.";
                 this.emit(':ask', speechOutput, reprompt);
             });
         }
     },
 	'AMAZON.HelpIntent': function () {
-        speechOutput = "Your Daily Horoscope skill has five fun functionalities. You can get horoscope readings by star sign, get the star sign or horoscope for someone born on a specific date, and you can set your star sign and then get a daily horoscope reading by simply asking Daily Horoscope for my daily horoscope!";
+        speechOutput = "Your Daily Horoscope skill has five, fun functionalities. You can get horoscope readings by star sign, get the star sign or horoscope for someone born on a specific date, find out the relationship compatibility of two star signs, and you can set your star sign and then get a daily horoscope reading by simply asking Daily Horoscope for my daily horoscope!";
         reprompt = "Try something like, set my star sign to Taurus, or what is Scorpio's horoscope?";
         this.emit(':ask', speechOutput, reprompt);
     },
@@ -132,7 +141,7 @@ var handlers = {
                 reprompt = "You can hear daily horoscopes for all star signs, just ask for, Scorpio's horoscope, or, my horoscope?";
             } else {
                 speechOutput = "There appears to be a ploblem with my crystal ball! Try again, or find out the star sign or horoscope for a specific birthdate.";
-                reprompt = "You can ask for the star sign or horoscope of a specific date, or, hear the horoscope for a specific star sign.";
+                reprompt = "You can ask for the star sign or horoscope of a specific date, hear the horoscope for a specific star sign, or discover the compatibility of you and your partner's star signs.";
             }
             this.emit(':ask', speechOutput, reprompt);
         });
@@ -142,7 +151,7 @@ var handlers = {
         reprompt = "";
         // user has not set their star sign yet
         if( Object.keys(this.attributes).length === 0 ) {
-            speechOutput = "We have not associated a star sign to your account, save a star sign to your account to get your daily, updated horoscope.";
+            speechOutput = "My crystal ball appears faulty! Please enlighten me, what would you like to save as your star sign, or you can ask for the horoscope of any other star sign?";
             reprompt = "Save your star sign for convenience, for example, my star sign is Scorpio.";
             this.emit(':ask', speechOutput, reprompt);
         // user has already set their star sign
@@ -180,7 +189,7 @@ var handlers = {
             reprompt = "Ask for the star sign of a different date of birth, or, check out any star sign's horoscope.";
         } else {
             speechOutput = "Hmmm, I don't quite know that date, please try a Gregorian calendar date.";
-            reprompt = "Ask for the star sign of a different date, for example, someone born today, or the star sign for January, the third. Or, you can check out any star sign's horoscope.";
+            reprompt = "Ask for the star sign of a different date, for example, someone born today, or the star sign for January, the third. Or, ask for help to discover additional horoscope functionality.";
         }
         // emit the response, keep daily horoscope open
         this.emit(':ask', speechOutput, reprompt);
@@ -228,13 +237,24 @@ var handlers = {
     'GetCompatibleZodiacSignIntent': function () {
         speechOutput = "";
         reprompt = "";
-
-        var starSignASlot = this.event.request.intent.slots.zodiacSignA.value;
-        var starSignBSlot = this.event.request.intent.slots.zodiacSignB.value;
-
-        speechOutput = "Uh oh, this functionality is still being built! In the meantime, you can hear any star sign's horoscope.";
-        reprompt = "Which star sign's horoscope would you like to hear, for example, Scorpio's horoscope? Or, ask for help to discover additional horoscope functionality.";
-        this.emit(":ask", speechOutput, reprompt);
+        starSignASlot = this.event.request.intent.slots.zodiacSignA.value;
+        starSignBSlot = this.event.request.intent.slots.zodiacSignB.value;
+        // if the user is new, or has not set a star sign yet, set the base star sign as their star sign
+        if ( Object.keys(this.attributes).length === 0 ) {
+            this.attributes['existingStarSign'] = starSignASlot;
+            existingStarSign = this.attributes['existingStarSign'];
+        }
+        // get the horoscope of the star sign
+        getCompatibility( starSignASlot, starSignBSlot, (text) => {
+            if ( text ) {
+                speechOutput = text + " Which other star signs' compatibility would you like to hear, or you can hear the horoscope for a specific star sign?";
+                reprompt = "You can also hear daily horoscopes for all star signs, just ask for, Scorpio's horoscope, or, my horoscope?";
+            } else {
+                speechOutput = "There appears to be a ploblem with my crystal ball! Try again, or find out the horoscope for a specific birthdate or star sign.";
+                reprompt = "You can ask for the star sign or horoscope of a specific date, or, hear the horoscope for a specific star sign.";
+            }
+            this.emit(':ask', speechOutput, reprompt);
+        });
     },
     'SetUserZodiacSignIntent': function () {
         speechOutput = "";
@@ -243,7 +263,7 @@ var handlers = {
         var setStarSign = this.event.request.intent.slots.inputZodiacSign.value;
         this.attributes['existingStarSign'] = setStarSign;
         existingStarSign = this.attributes['existingStarSign'];
-        speechOutput = "Your star sign has been updated to " + existingStarSign + ". Would you like to hear your horoscope, or, you can hear any other star sign's horoscope?";
+        speechOutput = "Your star sign has been updated to " + existingStarSign + ". Would you like to hear your horoscope, or you can hear any other star sign's horoscope?";
         reprompt = "Which star sign's horoscope would you like to hear, for example, Scorpio's horoscope, or, my horoscope.";
         // emit the response, keep daily horoscope open
         this.emit(':ask', speechOutput, reprompt);
@@ -267,6 +287,19 @@ var handlers = {
 
 // 3. Functions  =================================================================================================
 
+function getStoredCompatibility(callback) {
+    var docClient = new AWS.DynamoDB.DocumentClient();
+    var params = paramsQueryCompatibility;
+    docClient.query(params, (err, data) => {
+        if ( err ) {
+            console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+            context.fail(JSON.stringify(err, null, 2));
+        } else {
+            callback(data);
+        }
+    })
+}
+
 function getStoredHoroscope(callback) {
     var docClient = new AWS.DynamoDB.DocumentClient();
     var params = paramsQueryAllReadings;
@@ -278,6 +311,19 @@ function getStoredHoroscope(callback) {
             callback(data);
         }
     })
+}
+
+function getCompatibility(starSignBase, starSignPartner, callback) {
+    var upperCaseStarSignBase = starSignBase[0].toUpperCase() + starSignBase.substring(1);
+    var upperCaseStarSignPartner = starSignPartner[0].toUpperCase() + starSignPartner.substring(1);
+    paramsQueryCompatibility.ExpressionAttributeValues[":star_sign_base"] = upperCaseStarSignBase;
+    paramsQueryCompatibility.ExpressionAttributeValues[":star_sign_partner"] = upperCaseStarSignPartner;
+    getStoredCompatibility( (compatibilityObject) => {
+        // Assume only one is available, hence select the first occurance
+        var compatibilityItems = compatibilityObject.Items[0];
+        var compatibility = compatibilityItems.compatibility;
+        callback(compatibility);
+    });
 }
 
 function horoscopeDownloadAndDbUpdate(horoscopeList, callback) {

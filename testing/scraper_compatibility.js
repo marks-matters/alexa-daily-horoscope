@@ -5,7 +5,7 @@ AWS.config.update({
 });
 
 const allStarSigns = [
-    'pisces',
+    'taurus',
     'taurus',
     'aries',
     'gemini',
@@ -130,7 +130,7 @@ function updateCompatibility( updatestarSignBase, updatestarSignPartner, callbac
         var dbUpdateStatus = false;
         var docClient = new AWS.DynamoDB.DocumentClient();
         params = {
-            TableName : "horoscope_compatibility",
+            TableName : "zodiac_sign_compatibility",
             Item : {
                 "zodiac_sign_base" :    starSignBase,
                 "zodiac_sign_partner" : starSignPartner,
