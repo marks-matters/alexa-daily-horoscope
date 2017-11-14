@@ -96,7 +96,7 @@ exports.handler = function(event, context, callback) {
 
 var handlers = {
     'LaunchRequest': function () {
-        console.log('Request:', this.event.request.intent.name);
+        console.log('Request: LaunchRequest');
         // if there is no stored horoscope
         if ( Object.keys(this.attributes).length === 0 ) {
             console.log('Status: New user!');
@@ -112,8 +112,8 @@ var handlers = {
                     reprompt = "If you enjoy listening to your Daily Horoscope, let us know by reviewing this skill in the Alexa Store!";
                 } else {
                     successStatus = 'Failure';
-                    speechOutput = "There appears to be a problem today with my crystal ball for " + starSign + "! Try again tomorrow, I'll give my crystal ball a polish!";
-                    reprompt = "While I'm busy, you can ask for the star sign or horoscope of a specific date, or discover the compatibility of you and your partner's star signs.";
+                    speechOutput = "There appears to be a problem today with my crystal ball for " + starSign + "! I'll have to give it a polish, please try again tomorrow!";
+                    reprompt = "While I'm busy, you can ask for the star sign or horoscope of a specific date, or discover the compatibility between your and your partner's star signs.";
                 }
                 console.log('Status:', successStatus,',Star sign queried:', starSign);
                 this.emit(':ask', speechOutput, reprompt);
@@ -122,7 +122,7 @@ var handlers = {
     },
 	'AMAZON.HelpIntent': function () {
         console.log('Request:', this.event.request.intent.name);
-        speechOutput = "Your Daily Horoscope skill has five, fun functionalities. You can get horoscope readings by star sign, get the star sign or horoscope for someone born on a specific date, find out the relationship compatibility of two star signs, and you can set your star sign and then get a daily horoscope reading by simply asking Daily Horoscope for my daily horoscope!";
+        speechOutput = "Your Daily Horoscope skill has five, fun functionalities. You can get horoscope readings by star sign, get the star sign or horoscope for someone born on a specific date, find out the relationship compatibility between two star signs, and you can set your star sign and then get a daily horoscope reading by simply asking Daily Horoscope for my daily horoscope!";
         reprompt = "Try something like, set my star sign to Taurus, or what is Scorpio's horoscope?";
         this.emit(':ask', speechOutput, reprompt);
     },
@@ -139,7 +139,6 @@ var handlers = {
         this.emit(':tell', speechOutput);
     },
     'SessionEndedRequest': function () {
-        console.log('Request:', this.event.request.intent.name);
         this.emit(':saveState', true);
     },
 	'GetSpecificHoroscopeIntent': function () {
@@ -164,7 +163,7 @@ var handlers = {
             } else {
                 successStatus = 'Failure';
                 speechOutput = "There appears to be a problem today with my crystal ball for " + starSign + "! Give a different star sign a go, I'll work on a reading for " + starSign + "!";
-                reprompt = "While I'm busy, you can ask for the star sign or horoscope of a specific date, or discover the compatibility of you and your partner's star signs.";
+                reprompt = "While I'm busy, you can ask for the star sign or horoscope of a specific date, or discover the compatibility between your and your partner's star signs.";
             }
             console.log('Status:', successStatus,',Star sign queried:', starSign);
             this.emit(':ask', speechOutput, reprompt);
