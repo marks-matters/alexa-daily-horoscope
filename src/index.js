@@ -38,7 +38,8 @@ var data = {
     ,nowUTC = new Date ( now )
     ,missingStarSigns = []
     ,dateOptions = {month : 'long', day : 'numeric', timeZone : 'utc'}
-    ,successStatus = '';
+    ,successStatus = ''
+    ,failedContext = '';
 
 nowUTC.setHours ( now.getHours() - 1 );
 nowUTC = nowUTC.toISOString();
@@ -111,8 +112,13 @@ var handlers = {
                     speechOutput = "Your daily horoscope for " + starSign + " is. " + reading + " You can hear other horoscopes, or, change your saved star sign. Just say stop to end.";
                     reprompt = "If you enjoy listening to your Daily Horoscope, let us know by reviewing this skill in the Alexa Store!";
                 } else {
+                    if ( isAlphaTextString(starSign) ) {
+                        failedContext = starSign;
+                    } else {
+                        failedContext = "that";
+                    }
                     successStatus = 'Failure';
-                    speechOutput = "There appears to be a problem today with my crystal ball for " + starSign + "! I'll have to give it a polish, please try again tomorrow!";
+                    speechOutput = "Oh no, there appears to be a problem today with my crystal ball for " + failedContext + "! I'll have to give it a polish, please try again tomorrow!";
                     reprompt = "While I'm busy, you can ask for the star sign or horoscope of a specific date, or discover the compatibility between your and your partner's star signs.";
                 }
                 console.log('Status:', successStatus,',Star sign queried:', starSign);
@@ -128,13 +134,11 @@ var handlers = {
     },
     'AMAZON.CancelIntent': function () {
         console.log('Request:', this.event.request.intent.name);
-        //TODO random goobye words
         speechOutput = 'Goodbye';
         this.emit(':tell', speechOutput);
     },
     'AMAZON.StopIntent': function () {
         console.log('Request:', this.event.request.intent.name);
-        //TODO random goobye words
         speechOutput = 'Goodbye';
         this.emit(':tell', speechOutput);
     },
@@ -161,8 +165,13 @@ var handlers = {
                 speechOutput = text + " Which other horoscope would you like to hear?";
                 reprompt = "You can hear daily horoscopes for all star signs, just ask for, Scorpio's horoscope, or, my horoscope?";
             } else {
+                if ( isAlphaTextString(starSign) ) {
+                    failedContext = starSign;
+                } else {
+                    failedContext = "that";
+                }
                 successStatus = 'Failure';
-                speechOutput = "There appears to be a problem today with my crystal ball for " + starSign + "! Give a different star sign a go, I'll work on a reading for " + starSign + "!";
+                speechOutput = "Oh no, there appears to be a problem today with my crystal ball for " + failedContext + "! While I work on a reading for " + failedContext + ", give a different star sign a go!";
                 reprompt = "While I'm busy, you can ask for the star sign or horoscope of a specific date, or discover the compatibility between your and your partner's star signs.";
             }
             console.log('Status:', successStatus,',Star sign queried:', starSign);
@@ -176,7 +185,7 @@ var handlers = {
         // user has not set their star sign yet
         if( Object.keys(this.attributes).length === 0 ) {
             speechOutput = "My crystal ball appears faulty! Please enlighten me, what would you like to save as your star sign, or you can ask for the horoscope of any other star sign?";
-            reprompt = "Save your star sign for convenience, for example, my star sign is Scorpio.";
+            reprompt = "Save your star sign for convenience, for example, save my star sign as Scorpio.";
             console.log('Status: New User!');
             this.emit(':ask', speechOutput, reprompt);
         // user has already set their star sign
@@ -187,11 +196,16 @@ var handlers = {
                 if ( reading ) {
                     successStatus = 'Success';
                     speechOutput = starSign + ". " + reading + " You can hear any other star sign's horoscope, or, change your saved star sign.";
-                    reprompt = "Ask for help to discover additional horoscope functionality.";
+                    reprompt = "Ask for help to discover additional horoscope functionality. Just say stop to end.";
                 } else {
+                    if ( isAlphaTextString(starSign) ) {
+                        failedContext = starSign;
+                    } else {
+                        failedContext = "that";
+                    }
                     successStatus = 'Failure';
-                    speechOutput = "There appears to be a problem today with my crystal ball for " + starSign + "! Try again tomorrow, I'll give my crystal ball a polish!";
-                    reprompt = "While I'm busy, ask for help to discover additional horoscope functionality.";
+                    speechOutput = "Oh no, there appears to be a problem today with my crystal ball for " + failedContext + "! Try again tomorrow, I'll give my crystal ball a polish!";
+                    reprompt = "While I'm busy, you can ask for help to discover additional horoscope functionality. Just say stop to end.";
                 }
                 console.log('Status:', successStatus,',Star sign queried:', starSign);
                 this.emit(':ask', speechOutput, reprompt);
@@ -269,8 +283,8 @@ var handlers = {
         console.log('Request:', this.event.request.intent.name);
         speechOutput = "";
         reprompt = "";
-        starSignASlot = this.event.request.intent.slots.zodiacSignA.value;
-        starSignBSlot = this.event.request.intent.slots.zodiacSignB.value;
+        var starSignASlot = this.event.request.intent.slots.zodiacSignA.value;
+        var starSignBSlot = this.event.request.intent.slots.zodiacSignB.value;
         // if the user is new, or has not set a star sign yet, set the base star sign as their star sign
         if ( validateStarSign(starSignASlot) ) {
             if ( Object.keys(this.attributes).length === 0 ) {
@@ -286,9 +300,24 @@ var handlers = {
                 reprompt = "You can also hear daily horoscopes for all star signs, just ask for, Scorpio's horoscope, or, my horoscope?";
                 successStatus = 'Success';
             } else {
-                speechOutput = "There appears to be a problem with my crystal ball for " + starSignASlot + " and " + starSignBSlot + "! Try again, or find out the horoscope for a specific birthdate or star sign.";
+                // determine failure context to repond with
+                if ( isAlphaTextString(starSignASlot) ) {
+                    if ( isAlphaTextString(starSignBSlot) ) {
+                        failedContext = " for " + starSignASlot + " and " + starSignBSlot;
+                    } else {
+                        failedContext = " for " + starSignASlot + " and the other unknown star sign";
+                    }
+                } else {
+                    if ( isAlphaTextString(starSignBSlot) ) {
+                        failedContext = " for " + starSignBSlot + " and the other unknown star sign";
+                    } else {
+                        failedContext = " as both star signs are unknown";
+                    }
+                }
+
+                speechOutput = "There appears to be a problem with my crystal ball" + failedContext + "! Try again, or find out the horoscope for a specific birthdate or star sign.";
                 reprompt = "You can ask for the star sign or horoscope of a specific date, or, hear the horoscope for a specific star sign.";
-                successStatus = 'Failure';
+                successStatus = 'Failure, failedContext: ' + failedContext;
             }
             console.log('Status:', successStatus, ',starSignASlot:', starSignASlot, ',starSignBSlot:', starSignBSlot);
             this.emit(':ask', speechOutput, reprompt);
@@ -298,8 +327,6 @@ var handlers = {
         console.log('Request:', this.event.request.intent.name);
         speechOutput = "";
         reprompt = "";
-        legitStarSign = false;
-        successStatus = 'Failure';
         // set setStarSign to the slot value that accompanies the SetUserZodiacSignIntent intent
         var setStarSign = this.event.request.intent.slots.inputZodiacSign.value;
         if ( validateStarSign(setStarSign) ) {
@@ -309,8 +336,14 @@ var handlers = {
             speechOutput = "Your star sign has been updated to " + existingStarSign + ". Would you like to hear your horoscope, or you can hear any other star sign's horoscope?";
             reprompt = "Which star sign's horoscope would you like to hear, for example, Scorpio's horoscope, or, my horoscope.";
         } else {
-            speechOutput = "Hmmm... I don't recognize " + setStarSign + ". Please try again by setting one of the 12 signs of the Zodiac as your star sign.";
+            if ( isAlphaTextString(setStarSign) ) {
+                failedContext = setStarSign;
+            } else {
+                failedContext = "that";
+            }
+            speechOutput = "Hmmm... I don't recognize " + failedContext + ". Please try again by setting one of the 12 signs of the Zodiac as your star sign.";
             reprompt = "Set your star sign, for example, say; set my star sign to Scorpio.";
+            successStatus = 'Failure';
         }
         console.log('Status:', successStatus,',Star sign set to:', setStarSign);
         // emit the response, keep daily horoscope open
@@ -340,14 +373,32 @@ var handlers = {
 
 // 3. Functions  =================================================================================================
 
+function isAlphaTextString ( text ) {
+    var isAlphaText = false;
+    if ( /^[a-zA-Z][a-zA-Z]*$/.test(text) == true ) {
+        isAlphaText = true;
+    }
+    return isAlphaText;
+}
+
+function isTextString ( text ) {
+    var isText = false;
+    if ( /^[a-zA-Z][a-zA-Z0-9- !,?:'.();"]*$/.test(text) == true ) {
+        isText = true;
+    }
+    return isText;
+}
+
 // Validate incoming star sign
 function validateStarSign(starSignInQuestion) {
     var legitStarSign = false;
-    allStarSigns.forEach( function(starSignToCompare) {
-        if ( starSignToCompare.toUpperCase() == starSignInQuestion.toUpperCase() ) {
-            legitStarSign = true;
-        }
-    });
+    if ( isAlphaTextString(starSignInQuestion) ) {
+        allStarSigns.forEach( function(starSignToCompare) {
+            if ( starSignToCompare.toUpperCase() == starSignInQuestion.toUpperCase() ) {
+                legitStarSign = true;
+            }
+        });
+    }
     return legitStarSign;
 }
 
@@ -394,6 +445,8 @@ function getCompatibility(starSignBase, starSignPartner, callback) {
     }
 }
 
+// Iterates through the list of missing star signs and calls a download and then
+// DB update function
 function horoscopeDownloadAndDbUpdate(horoscopeList, callback) {
     var successStatus = false;
     var missingList = horoscopeList;
@@ -402,7 +455,7 @@ function horoscopeDownloadAndDbUpdate(horoscopeList, callback) {
         try {
             downloadHoroscope(getStarSign, (updateStarSign, scrapedHoroscope) => {
                 updateDBHoroscope(updateStarSign, scrapedHoroscope, (updateStatus) => {
-                    if (missingList.length == 0) {
+                    if ( missingList.length == 0 ) {
                         successStatus = true;
                         callback(successStatus);
                     } else {
@@ -417,6 +470,7 @@ function horoscopeDownloadAndDbUpdate(horoscopeList, callback) {
 }
 
 function downloadHoroscope(downloadStarSign, callback) {
+    console.log('downloadHoroscope with downloadStarSign =', downloadStarSign);
     var http = require('https');
     var hsOptions = {
         method: "GET",
@@ -445,14 +499,14 @@ function downloadHoroscope(downloadStarSign, callback) {
                     reading = reading.replace('</a></div>" >', '').replace('</a>', '');
                 }
             }
-            reading = reading.replace('--', '');
-            //TODO improve error handling for unsuccessful download
-            if ( reading.length === 0 ) {
-                console.log("DOWNLOAD FAILED FOR: " + downloadStarSign);
-                callback(null,null);
+            reading = reading.replace('--', '-');
+            if ( isTextString(reading) ) {
+                callback(downloadStarSign, reading);
             }
             else {
-                callback(downloadStarSign, reading);
+                console.log("!!! ERROR !!! DOWNLOAD FAILED FOR: " + downloadStarSign);
+                console.log('Reading: ' + reading);
+                callback(downloadStarSign, "<error>");
             }
         });
     });
@@ -479,8 +533,9 @@ function updateDBHoroscope(downloadedStarSign, downloadedHoroscope, callback) {
     });
 }
 
+// calls a downloader for all star signs, then updates a list of missing star signs
+// and passes that list to the download and update dispatcher
 function downloadAndReturnHoroscopes (callback) {
-    //TODO: what if amazon is down, error handling
     getStoredHoroscope( (dynamoHoroscopes) => {
         for ( eachStarSign of allStarSigns ) {
             var missing = true;
@@ -509,30 +564,32 @@ function downloadAndReturnHoroscopes (callback) {
 // otherwise, fetch db values for horoscopes for today
 function getHoroscope(retrieveStarSign, callback) {
     var reading = '';
+    // validate requested star sign
     if ( validateStarSign(retrieveStarSign) ) {
+        // check if there is cached horoscope data
         if ( Object.keys(horoscopeData).length === 0 ) {
             // no cached horoscope data
             downloadAndReturnHoroscopes( (dynamoDBData) => {
                 horoscopeData = dynamoDBData;
                 horoscopeData.Items.some( function (horoscope) {
-                    if ( horoscope.zodiac_sign.toUpperCase() == retrieveStarSign.toUpperCase() ) {
+                    if ( horoscope.zodiac_sign.toUpperCase() == retrieveStarSign.toUpperCase() && isTextString(horoscope.horoscope_reading) ) {
                         reading = horoscope.horoscope_reading;
                         return true;
+                    // no horoscope reading to return :(
                     } else {
-                        reading = "Our crystal ball is broken today for " + retrieveStarSign + ".";
                         return false;
                     }
                 });
                 callback(reading);
             });
         } else {
-            // cached all horoscope data
+            // all horoscope data is cached
             horoscopeData.Items.some( function (horoscope) {
-                if ( horoscope.zodiac_sign.toUpperCase() == retrieveStarSign.toUpperCase() ) {
+                if ( horoscope.zodiac_sign.toUpperCase() == retrieveStarSign.toUpperCase() && isTextString(horoscope.horoscope_reading) ) {
                     reading = horoscope.horoscope_reading;
                     return true;
+                // no horoscope reading to return :(
                 } else {
-                    reading = "Our crystal ball is broken today for " + retrieveStarSign + ".";
                     return false;
                 }
             });
