@@ -373,20 +373,20 @@ var handlers = {
 
 // 3. Functions  =================================================================================================
 
-function isAlphaTextString ( text ) {
-    var isAlphaText = false;
-    if ( /^[a-zA-Z][a-zA-Z]*$/.test(text) == true ) {
-        isAlphaText = true;
-    }
-    return isAlphaText;
-}
-
 function isTextString ( text ) {
     var isText = false;
-    if ( /^[a-zA-Z][a-zA-Z0-9- !,?:'.();"]*$/.test(text) == true ) {
+    if ( /^[a-zA-Z][a-zA-Z0-9- !,?:'.();"]*$/.test(text) && typeof text != 'undefined' ) {
         isText = true;
     }
     return isText;
+}
+
+function isAlphaTextString ( text ) {
+    var isAlphaText = false;
+    if ( isTextString(text) && /^[a-zA-Z][a-zA-Z]*$/.test(text) ) {
+        isAlphaText = true;
+    }
+    return isAlphaText;
 }
 
 // Validate incoming star sign
