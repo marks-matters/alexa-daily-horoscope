@@ -27,7 +27,7 @@ var data = {
     ,horoscopeData = {}
     ,speechOutput = ''
     ,reprompt = ''
-    ,welcomeOutput = "Which star sign's horoscope would you like to hear?"
+    ,welcomeOutput = "Welcome to Daily Horoscope, you can hear your horoscope by asking for the horoscope of your star sign, for example, what is Libra's horoscope?"
     ,welcomeReprompt = "I didn't quite catch that, please request a star sign's horoscope, for example, Scorpio's horoscope, or, ask for help to discover additional horoscope functionality."
     ,starSign
     ,starSignBase = ''
