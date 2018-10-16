@@ -9,19 +9,19 @@
  // 1. Text strings =====================================================================================================
 var data = {
         'starSignDates': {
-            'aries':        {'fromDate': '03-21', 'toDate': '04-19'},
-            'taurus':       {'fromDate': '04-20', 'toDate': '05-20'},
-            'gemini':       {'fromDate': '05-21', 'toDate': '06-20'},
-            'cancer':       {'fromDate': '06-21', 'toDate': '07-22'},
-            'leo':          {'fromDate': '07-23', 'toDate': '08-22'},
-            'virgo':        {'fromDate': '08-23', 'toDate': '09-22'},
-            'libra':        {'fromDate': '09-23', 'toDate': '10-22'},
-            'scorpio':      {'fromDate': '10-23', 'toDate': '11-21'},
-            'sagittarius':  {'fromDate': '11-22', 'toDate': '12-21'},
-            'capricorn':    {'fromDate': '12-22', 'toDate': '12-31'},
-            'capricorn':    {'fromDate': '01-01', 'toDate': '01-19'},
-            'aquarius':     {'fromDate': '01-20', 'toDate': '02-18'},
-            'pisces':       {'fromDate': '02-19', 'toDate': '03-20'}
+            'aries':         {'fromDate': '03-21', 'toDate': '04-19'}
+            ,'taurus':       {'fromDate': '04-20', 'toDate': '05-20'}
+            ,'gemini':       {'fromDate': '05-21', 'toDate': '06-20'}
+            ,'cancer':       {'fromDate': '06-21', 'toDate': '07-22'}
+            ,'leo':          {'fromDate': '07-23', 'toDate': '08-22'}
+            ,'virgo':        {'fromDate': '08-23', 'toDate': '09-22'}
+            ,'libra':        {'fromDate': '09-23', 'toDate': '10-22'}
+            ,'scorpio':      {'fromDate': '10-23', 'toDate': '11-21'}
+            ,'sagittarius':  {'fromDate': '11-22', 'toDate': '12-21'}
+            ,'capricorn':    {'fromDate': '12-22', 'toDate': '12-31'}
+            ,'capricorn':    {'fromDate': '01-01', 'toDate': '01-19'}
+            ,'aquarius':     {'fromDate': '01-20', 'toDate': '02-18'}
+            ,'pisces':       {'fromDate': '02-19', 'toDate': '03-20'}
         }
     }
     ,horoscopeData = {}
@@ -39,7 +39,12 @@ var data = {
     ,missingStarSigns = []
     ,dateOptions = {month : 'long', day : 'numeric', timeZone : 'utc'}
     ,successStatus = ''
-    ,failedContext = '';
+    ,failedContext = ''
+    // TODO: structure this once we understand the structure of the response
+    ,intentToFulfill = ''
+    ,canUnderstand = "NO"
+    ,canFulfill = "NO"
+    ;
 
 nowUTC.setHours ( now.getHours() - 1 );
 nowUTC = nowUTC.toISOString();
@@ -125,6 +130,31 @@ var handlers = {
                 this.emit(':ask', speechOutput, reprompt);
             });
         }
+    },
+    // TODO: working on adding https://developer.amazon.com/docs/custom-skills/request-types-reference.html#CanFulfillIntentRequest
+    // https://developer.amazon.com/docs/custom-skills/understand-name-free-interaction-for-custom-skills.html
+// {
+//     "version":"1.0",
+//     "response":{
+//         "canFulfillIntent": {
+//             "canFulfill": "YES",
+//             "slots":{
+//                 "slotName1": {
+//                     "canUnderstand": "YES",
+//                     "canFulfill": "YES"
+//                 },
+//                "slotName2": {
+//                     "canUnderstand": "YES",
+//                     "canFulfill": "YES"
+//                 }
+//             }
+//         }
+//     }
+// }
+    'AMAZON.CanFulfillIntentRequest': function() {
+        intentToFulfill = this.event.request.intent.name.value;
+        canFulfill = "YES"
+        this.emit(':canFulfillIntent', canFulfill)
     },
 	'AMAZON.HelpIntent': function () {
         console.log('Request:', this.event.request.intent.name);

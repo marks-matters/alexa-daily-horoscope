@@ -1,0 +1,45 @@
+{
+  "session":{
+    "new": true,
+    "sessionId":"SessionId.acda4c8c-2f6d-4116-a9c3-8326e8d67af3",
+    "application":{
+      "applicationId":"amzn1.ask.skill.d373228d-ef5c-4a0c-a005-583c0d25bf11"
+    },
+    "attributes":{},
+    "user":{
+      "userId":"amzn1.ask.account.AGTRJXDXRIJZBQFJJ44JH4CZRTWTF7EJP3HIEB6NRKV6OMLSB74X63V75ULM5POICUHJIQASPP66DBPRK4EXZGASFRUBM7L6XNEL4XOATXEAMQ7P3U4RNC753ITPKUIDWKHIMU3KEP5IXAJZCZY2H77A2WCIUDEK5J6RVUA36S7I7CK4KHJAT2ISU33QTRFEQS2QD5VCTOP5B6Y"
+    }
+  },
+  "request":{
+    "type":"CanFulfillIntentRequest",
+    "requestId":"EdwRequestId.7bafba8a-7e05-4dce-961d-ca94f2688544",
+    "intent":{
+      "name":"GetSpecificHoroscopeIntent",
+      "slots":{
+        "zodiacSign":{
+          "name":"zodiacSign",
+          "value":"taurus"
+        }
+      }
+    },
+    "locale":"en-US",
+    "timestamp":"2017-10-03T22:02:29Z"
+  },
+  "context":{
+    "AudioPlayer":{
+      "playerActivity":"IDLE"
+    },
+    "System":{
+      "application":{
+        "applicationId":"amzn1.ask.skill.d373228d-ef5c-4a0c-a005-583c0d25bf11"
+      },
+      "user":{
+        "userId":"amzn1.ask.account.AGTRJXDXRIJZBQFJJ44JH4CZRTWTF7EJP3HIEB6NRKV6OMLSB74X63V75ULM5POICUHJIQASPP66DBPRK4EXZGASFRUBM7L6XNEL4XOATXEAMQ7P3U4RNC753ITPKUIDWKHIMU3KEP5IXAJZCZY2H77A2WCIUDEK5J6RVUA36S7I7CK4KHJAT2ISU33QTRFEQS2QD5VCTOP5B6Y"
+      },
+      "device":{
+        "supportedInterfaces":{}
+      }
+    }
+  },
+  "version":"1.0"
+}
