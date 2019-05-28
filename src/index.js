@@ -64,7 +64,6 @@ var paramsQueryCompatibility = {
 const appId = '' // TODO insert App ID here
     ,AWSregion = 'us-east-1'
     ,sessionEventsTableName = 'horoscopeUsers_starsign'
-    ,starSignHoroscopeTableName = 'horoscope_reading_daily'
     ,allStarSigns = [
         'aries',
         'taurus',
@@ -412,7 +411,7 @@ function getStoredCompatibility(callback) {
         } else {
             callback(data);
         }
-    })
+    });
 }
 
 function getStoredHoroscope(callback) {
@@ -425,7 +424,7 @@ function getStoredHoroscope(callback) {
         } else {
             callback(data);
         }
-    })
+    });
 }
 
 function getCompatibility(starSignBase, starSignPartner, callback) {
@@ -537,7 +536,7 @@ function updateDBHoroscope(downloadedStarSign, downloadedHoroscope, callback) {
 // and passes that list to the download and update dispatcher
 function downloadAndReturnHoroscopes (callback) {
     getStoredHoroscope( (dynamoHoroscopes) => {
-        for ( eachStarSign of allStarSigns ) {
+        for ( var eachStarSign of allStarSigns ) {
             var missing = true;
             dynamoHoroscopes.Items.forEach( function(horoscope) {
                 if ( horoscope.zodiac_sign.toUpperCase() == eachStarSign.toUpperCase() ) {

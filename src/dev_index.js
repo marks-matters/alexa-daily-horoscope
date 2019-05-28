@@ -5,26 +5,14 @@
 // You can copy and paste the contents as the code for a new Lambda function, using the alexa-skill-kit-sdk-factskill template.
 // This code includes helper functions for compatibility with versions of the SDK prior to 1.0.9, which includes the dialog directives.
 
+"use strict";
+var Alexa = require('alexa-sdk');
+var AWS = require('aws-sdk');
 
- // 1. Text strings =====================================================================================================
-var data = {
-        'starSignDates': {
-            'aries':         {'fromDate': '03-21', 'toDate': '04-19'}
-            ,'taurus':       {'fromDate': '04-20', 'toDate': '05-20'}
-            ,'gemini':       {'fromDate': '05-21', 'toDate': '06-20'}
-            ,'cancer':       {'fromDate': '06-21', 'toDate': '07-22'}
-            ,'leo':          {'fromDate': '07-23', 'toDate': '08-22'}
-            ,'virgo':        {'fromDate': '08-23', 'toDate': '09-22'}
-            ,'libra':        {'fromDate': '09-23', 'toDate': '10-22'}
-            ,'scorpio':      {'fromDate': '10-23', 'toDate': '11-21'}
-            ,'sagittarius':  {'fromDate': '11-22', 'toDate': '12-21'}
-            ,'capricorn':    {'fromDate': '12-22', 'toDate': '12-31'}
-            ,'capricorn':    {'fromDate': '01-01', 'toDate': '01-19'}
-            ,'aquarius':     {'fromDate': '01-20', 'toDate': '02-18'}
-            ,'pisces':       {'fromDate': '02-19', 'toDate': '03-20'}
-        }
-    }
-    ,horoscopeData = {}
+AWS.config.update({region: AWSregion});
+
+// 1. Text strings =====================================================================================================
+var horoscopeData = {}
     ,speechOutput = ''
     ,reprompt = ''
     ,welcomeOutput = "Which star sign's horoscope would you like to hear?"
@@ -83,23 +71,25 @@ const appId = '' // TODO insert App ID here
         'capricorn',
         'aquarius',
         'pisces'
-    ];
+    ]
+    ,starSignDates: {
+        'aries':         {'fromDate': '03-21', 'toDate': '04-19'}
+        ,'taurus':       {'fromDate': '04-20', 'toDate': '05-20'}
+        ,'gemini':       {'fromDate': '05-21', 'toDate': '06-20'}
+        ,'cancer':       {'fromDate': '06-21', 'toDate': '07-22'}
+        ,'leo':          {'fromDate': '07-23', 'toDate': '08-22'}
+        ,'virgo':        {'fromDate': '08-23', 'toDate': '09-22'}
+        ,'libra':        {'fromDate': '09-23', 'toDate': '10-22'}
+        ,'scorpio':      {'fromDate': '10-23', 'toDate': '11-21'}
+        ,'sagittarius':  {'fromDate': '11-22', 'toDate': '12-21'}
+        ,'capricorn':    {'fromDate': '12-22', 'toDate': '12-31'}
+        ,'capricorn':    {'fromDate': '01-01', 'toDate': '01-19'}
+        ,'aquarius':     {'fromDate': '01-20', 'toDate': '02-18'}
+        ,'pisces':       {'fromDate': '02-19', 'toDate': '03-20'}
+    };
 
- // 2. Skill Code =======================================================================================================
-"use strict";
-var Alexa = require('alexa-sdk');
-var AWS = require('aws-sdk');
-
-AWS.config.update({region: AWSregion});
-
-exports.handler = function(event, context, callback) {
-    var alexa = Alexa.handler(event, context);
-    alexa.appId = appId;
-    alexa.dynamoDBTableName = sessionEventsTableName;
-    alexa.registerHandlers(handlers);
-    alexa.execute();
-};
-
+// 2. Skill Code ======================================================================================================
+// Implement handle and canHandle as with https://github.com/PaulCutsinger/Sample-For-Can-Fulfill-Intent-Request/blob/master/lambda/custom/index.js
 var handlers = {
     'LaunchRequest': function () {
         console.log('Request: LaunchRequest');
@@ -153,6 +143,20 @@ var handlers = {
 // }
     'AMAZON.CanFulfillIntentRequest': function() {
         intentToFulfill = this.event.request.intent.name.value;
+        GetSpecificHoroscopeIntent
+
+        GetUserHoroscopeIntent
+
+        GetZoidicSignFromDateIntent
+
+        GetHoroscopeFromDateIntent
+
+        GetCompatibleZodiacSignIntent
+
+        SetUserZodiacSignIntent
+
+        GetUserZodiacSignIntent
+
         canFulfill = "YES"
         this.emit(':canFulfillIntent', canFulfill)
     },
@@ -567,7 +571,7 @@ function updateDBHoroscope(downloadedStarSign, downloadedHoroscope, callback) {
 // and passes that list to the download and update dispatcher
 function downloadAndReturnHoroscopes (callback) {
     getStoredHoroscope( (dynamoHoroscopes) => {
-        for ( eachStarSign of allStarSigns ) {
+        for ( var eachStarSign of allStarSigns ) {
             var missing = true;
             dynamoHoroscopes.Items.forEach( function(horoscope) {
                 if ( horoscope.zodiac_sign.toUpperCase() == eachStarSign.toUpperCase() ) {
@@ -634,9 +638,9 @@ function starSignFromDate(dateToCheck) {
     var starSignForDate = '';
     var compareYear = dateToCheck.getFullYear();
     // loop through the star sign dates, if the date lies in the date range then return the relevant star sign
-    Object.keys(data.starSignDates).some( function(checkStarSign) {
-        var rawFromDate = data.starSignDates[checkStarSign].fromDate;
-        var rawToDate = data.starSignDates[checkStarSign].toDate;
+    Object.keys(starSignDates).some( function(checkStarSign) {
+        var rawFromDate = starSignDates[checkStarSign].fromDate;
+        var rawToDate = starSignDates[checkStarSign].toDate;
         var fromDate = new Date(Date.UTC(compareYear, rawFromDate.substr(0,2) - 1, rawFromDate.substr(3,2)));
         var toDate = new Date(Date.UTC(compareYear, rawToDate.substr(0,2) - 1, rawToDate.substr(3,2)));
         // check date to see if it lies in the date range of the star sign
@@ -646,3 +650,13 @@ function starSignFromDate(dateToCheck) {
     });
     return starSignForDate;
 }
+
+// Exports
+
+exports.handler = function(event, context, callback) {
+    var alexa = Alexa.handler(event, context);
+    alexa.appId = appId;
+    alexa.dynamoDBTableName = sessionEventsTableName;
+    alexa.registerHandlers(handlers);
+    alexa.execute();
+};
