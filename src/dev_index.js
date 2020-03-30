@@ -5,33 +5,38 @@
 
  // 1. Text strings =====================================================================================================
 
-const canFulfillTrue = {
-     "canFulfill": "YES",
-     "slots":{
-         "voiceExpert": {
-             "canUnderstand": "YES",
-             "canFulfill": "YES"
+// This is an example of a CFIR function's validation and response
+// Note how the response is specific to the slot values
+ if (slotValues.voiceExpert.isValidated) {
+   console.log ("in CFIR AboutIntentHandler YES");
+   return handlerInput.responseBuilder
+   .withCanFulfillIntent(
+     {
+       "canFulfill": "YES",
+       "slots":{
+           "voiceExpert": {
+               "canUnderstand": "YES",
+               "canFulfill": "YES"
+             }
          }
-     }
- };
- const canFulfillTrueSlotMaybe = {
-      "canFulfill": "YES",
-      "slots":{
-          "voiceExpert": {
-              "canUnderstand": "YES",
-              "canFulfill": "MAYBE"
-          }
-      }
-  };
-const canFulfillFalse = {
-    "canFulfill": "NO",
-    "slots":{
-        "voiceExpert": {
-            "canUnderstand": "NO",
-            "canFulfill": "NO"
-        }
-    }
-};
+     })
+     .getResponse();
+ } else {
+   console.log ("in CFIR AboutIntentHandler canFulfill == NO");
+   return handlerInput.responseBuilder
+   .withCanFulfillIntent(
+     {
+       "canFulfill": "YES",
+       "slots":{
+           "voiceExpert": {
+               "canUnderstand": "YES",
+               "canFulfill": "NO"
+             }
+         }
+     })
+     .getResponse();
+
+// End of sample code
 
 var data = {
         'starSignDates': {
@@ -113,38 +118,6 @@ var AWS = require('aws-sdk');
 AWS.config.update({region: AWSregion});
 
 var Handlers = {
-    'LaunchRequest': function () {
-        console.log('Request:', handlerInput.RequestEnvelope.request.intent.name);
-        // if there is no stored horoscope
-        if ( Object.keys(this.attributes).length === 0 ) {
-            console.log('Status: New user!');
-            this.emit(':ask', welcomeOutput, welcomeReprompt);
-        } else {
-            starSign = this.attributes['existingStarSign'];
-            existingStarSign = this.attributes['existingStarSign'];
-            console.log('Returning user with star sign:', existingStarSign);
-            getHoroscope( starSign, (reading) => {
-                if ( reading ) {
-                    successStatus = 'Success';
-                    speechOutput = "Your daily horoscope for " + starSign + " is. " + reading + " You can hear other horoscopes, or, change your saved star sign. Just say stop to end.";
-                    reprompt = "If you enjoy listening to your Daily Horoscope, let us know by reviewing this skill in the Alexa Store!";
-                } else {
-                    if ( isAlphaTextString(starSign) ) {
-                        failedContext = starSign;
-                    } else {
-                        failedContext = "that";
-                    }
-                    successStatus = 'Failure';
-                    speechOutput = "Oh no, there appears to be a problem today with my crystal ball for " + failedContext + "! I'll have to give it a polish, please try again tomorrow!";
-                    reprompt = "While I'm busy, you can ask for the star sign or horoscope of a specific date, or discover the compatibility between your and your partner's star signs.";
-                }
-                console.log('Status:', successStatus,',Star sign queried:', starSign);
-                this.emit(':ask', speechOutput, reprompt);
-            });
-        }
-    },
-
-
     // TODO: working on adding https://developer.amazon.com/docs/custom-skills/request-types-reference.html#CanFulfillIntentRequest
     // https://developer.amazon.com/docs/custom-skills/understand-name-free-interaction-for-custom-skills.html
 // {
@@ -185,11 +158,21 @@ var Handlers = {
     //     this.emit(':canFulfillIntent', canFulfill)
     // },
 
-	'GetSpecificHoroscopeIntent': function () {
-        console.log('Request:', handlerInput.RequestEnvelope.request.intent.name);
+
+};
+
+const GetSpecificHoroscopeIntent = {
+    canHandle (handlerInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        return request.type === 'IntentRequest'
+            && request.intent.name === 'GetSpecificHoroscopeIntent';
+    },
+    handle (handlerInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        console.log('Request:', request.intent.name);
         speechOutput = "";
         reprompt = "";
-        starSign = this.event.request.intent.slots.zodiacSign.value;
+        starSign = request.intent.slots.zodiacSign.value;
         // if the user is new, or has not set a star sign yet, set this as their star sign
         if ( validateStarSign(starSign) ) {
             if ( Object.keys(this.attributes).length === 0 ) {
@@ -215,10 +198,23 @@ var Handlers = {
                 reprompt = "While I'm busy, you can ask for the star sign or horoscope of a specific date, or discover the compatibility between your and your partner's star signs.";
             }
             console.log('Status:', successStatus,',Star sign queried:', starSign);
-            this.emit(':ask', speechOutput, reprompt);
+            return handlerInput.responseBuilder
+                .speak(speechOutput)
+                .reprompt(reprompt)
+                .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+                .getResponse()
         });
+    }
+
+};
+
+const GetUserHoroscopeIntent = {
+    canHandle (handerInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        return request.type === 'IntentRequest'
+            && request.intent.name === 'GetUserHoroscopeIntent';
     },
-    'GetUserHoroscopeIntent': function () {
+    handle (handlerInput) {
         console.log('Request:', handlerInput.RequestEnvelope.request.intent.name);
         speechOutput = "";
         reprompt = "";
@@ -251,14 +247,65 @@ var Handlers = {
                 this.emit(':ask', speechOutput, reprompt);
             });
         }
+    }
+};
+
+const CFIRGetZoidicSignFromDateIntent = {
+    canHandle (handlerInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        return request.type === 'CanFulfillIntentRequest'
+            && request.intent.name === 'GetZoidicSignFromDateIntent';
     },
-    'GetZoidicSignFromDateIntent': function () {
+    handle (handlerInput) {
         console.log('Request:', handlerInput.RequestEnvelope.request.intent.name);
+        compareToDate = new Date(this.event.request.intent.slots.dateForZodiacSign.value);
+        const dateStarSign = starSignFromDate(compareToDate);
+        if ( validateDate(compareToDate) && dateStarSign ) {
+            console.log ("CFIR GetZoidicSignFromDateIntent: YES");
+            return handlerInput.responseBuilder
+                .withCanFulfillIntent(
+                    {
+                        "canFulfill": "YES",
+                        "slots":{
+                            "dateForZodiacSign": {
+                                "canUnderstand": "YES",
+                                "canFulfill": "YES"
+                            }
+                        }
+                    })
+                .getResponse();
+        } else {
+            console.log ("CFIR GetZoidicSignFromDateIntent, compareToDate/dateStarSign: NO");
+            return handlerInput.responseBuilder
+                .withCanFulfillIntent(
+                    {
+                        "canFulfill": "YES",
+                        "slots":{
+                            "dateForZodiacSign": {
+                                "canUnderstand": "YES",
+                                "canFulfill": "NO"
+                            }
+                        }
+                    })
+                .getResponse();
+        }
+    }
+};
+
+const GetZoidicSignFromDateIntent = {
+    canHandle (handlerInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        return request.type === 'IntentRequest'
+            && request.intent.name === 'GetZoidicSignFromDateIntent';
+    },
+    handle (handlerInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        console.log('Request:', request.intent.name);
         speechOutput = "";
         reprompt = "";
         // collect the date slot value
-        compareToDate = new Date(this.event.request.intent.slots.dateForZodiacSign.value);
-        var dateStarSign = starSignFromDate(compareToDate);
+        compareToDate = new Date(request.intent.slots.dateForZodiacSign.value);
+        const dateStarSign = starSignFromDate(compareToDate);
         // check that the star sign was returned correctly from the date
         if ( dateStarSign ) {
             // if the user is new, or has not set a star sign yet, set this as their star sign
@@ -277,14 +324,98 @@ var Handlers = {
         }
         console.log('Status:', successStatus,',Date queried:', compareToDate);
         // emit the response, keep daily horoscope open
-        this.emit(':ask', speechOutput, reprompt);
+        return handlerInput.responseBuilder
+            .speak(speechOutput)
+            .reprompt(reprompt)
+            .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+            .getResponse();
+    }
+};
+
+const CFIRGetCompatibilityIntent = {
+    canHandle (handlerInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        return request.type === 'CanFulfillIntentRequest'
+            && request.intent.name === 'GetCompatibilityIntent';
     },
-    'GetCompatibleZodiacSignIntent': function () {
-        console.log('Request:', handlerInput.RequestEnvelope.request.intent.name);
+    handle (handleInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        const zodicSignA = request.intent.slots.zodicSignA.value;
+        const zodicSignB = request.intent.slots.zodicSignB.value;
+        if ( validateStarSign(zodicSignA) ) {
+            console.log ("CFIR GetCompatibilityIntent, zodicSignA: YES");
+            if ( validateStarSign(zodiacSignB) ) {
+                console.log ("CFIR GetCompatibilityIntent, zodicSignB: YES");
+                return handlerInput.responseBuilder
+                    .withCanFulfillIntent(
+                        {
+                            "canFulfill": "YES",
+                            "slots":{
+                                "zodiacSignA": {
+                                    "canUnderstand": "YES",
+                                    "canFulfill": "YES"
+                                },
+                                "zodiacSignB": {
+                                    "canUnderstand": "YES",
+                                    "canFulfill": "YES"
+                                }
+                            }
+                        })
+                    .getResponse();
+            } else {
+                console.log ("CFIR GetCompatibilityIntent, zodicSignB: NO");
+                return handlerInput.responseBuilder
+                    .withCanFulfillIntent(
+                        {
+                            "canFulfill": "YES",
+                            "slots":{
+                                "zodiacSignA": {
+                                    "canUnderstand": "YES",
+                                    "canFulfill": "YES"
+                                },
+                                "zodiacSignB": {
+                                    "canUnderstand": "YES",
+                                    "canFulfill": "NO"
+                                }
+                            }
+                        })
+                    .getResponse();
+            }
+        } else {
+            console.log ("CFIR GetCompatibilityIntent, zodicSignA: NO");
+            return handlerInput.responseBuilder
+                .withCanFulfillIntent(
+                    {
+                        "canFulfill": "YES",
+                        "slots":{
+                            "zodiacSignA": {
+                                "canUnderstand": "YES",
+                                "canFulfill": "NO"
+                            },
+                            "zodiacSignB": {
+                                "canUnderstand": "YES",
+                                "canFulfill": "MAYBE"
+                            }
+                        }
+                    })
+                .getResponse();
+        }
+    }
+};
+
+const GetCompatibilityIntent = {
+    canhandle (handlerInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        return request.type == "IntentRequest"
+            && request.intent.name == "GetCompatibilityIntent";
+    },
+    handle (handerInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        console.log('Request:', request.intent.name);
         speechOutput = "";
         reprompt = "";
-        var starSignASlot = this.event.request.intent.slots.zodiacSignA.value;
-        var starSignBSlot = this.event.request.intent.slots.zodiacSignB.value;
+        const starSignASlot = request.intent.slots.zodiacSignA.value;
+        const starSignBSlot = request.intent.slots.zodiacSignB.value;
         // if the user is new, or has not set a star sign yet, set the base star sign as their star sign
         if ( validateStarSign(starSignASlot) ) {
             if ( Object.keys(this.attributes).length === 0 ) {
@@ -320,15 +451,69 @@ var Handlers = {
                 successStatus = 'Failure, failedContext: ' + failedContext;
             }
             console.log('Status:', successStatus, ',starSignASlot:', starSignASlot, ',starSignBSlot:', starSignBSlot);
-            this.emit(':ask', speechOutput, reprompt);
+            return handlerInput.responseBuilder
+                .speak(speechOutput)
+                .reprompt(reprompt)
+                .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+                .getResponse();
         });
+    }
+};
+
+const CFIRSetUserZodiacSignIntent = {
+    canHandle (handlerInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        return request.type === 'CanFulfillIntentRequest'
+            && request.intent.name === 'SetUserZodiacSignIntent';
     },
-    'SetUserZodiacSignIntent': function () {
-        console.log('Request:', handlerInput.RequestEnvelope.request.intent.name);
+    handle (handleInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        const setStarSign = request.intent.slots.inputZodiacSign.value;
+        if ( validateStarSign(setStarSign) ) {
+            console.log ("CFIR SetUserZodiacSignIntent: YES");
+            return handlerInput.responseBuilder
+                .withCanFulfillIntent(
+                    {
+                        "canFulfill": "YES",
+                        "slots":{
+                            "inputZodiacSign": {
+                                "canUnderstand": "YES",
+                                "canFulfill": "YES"
+                            }
+                        }
+                    })
+                .getResponse();
+        } else {
+            console.log ("CFIR SetUserZodiacSignIntent: NO");
+            return handlerInput.responseBuilder
+                .withCanFulfillIntent(
+                  {
+                    "canFulfill": "YES",
+                    "slots":{
+                        "inputZodiacSign": {
+                            "canUnderstand": "YES",
+                            "canFulfill": "NO"
+                          }
+                      }
+                  })
+                  .getResponse();
+        }
+    }
+};
+
+const SetUserZodiacSignIntent = {
+    canHandle (handlerInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        return request.type === 'IntentRequest'
+            && request.intent.name === 'SetUserZodiacSignIntent';
+    },
+    handle (handlerInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        console.log('Request:', request.intent.name);
         speechOutput = "";
         reprompt = "";
         // set setStarSign to the slot value that accompanies the SetUserZodiacSignIntent intent
-        var setStarSign = this.event.request.intent.slots.inputZodiacSign.value;
+        const setStarSign = request.intent.slots.inputZodiacSign.value;
         if ( validateStarSign(setStarSign) ) {
             this.attributes['existingStarSign'] = setStarSign;
             existingStarSign = this.attributes['existingStarSign'];
@@ -339,76 +524,101 @@ var Handlers = {
             if ( isAlphaTextString(setStarSign) ) {
                 failedContext = setStarSign;
             } else {
-                failedContext = "that";
+                failedContext = "that star sign";
             }
             speechOutput = "Hmmm... I don't recognize " + failedContext + ". Please try again by setting one of the 12 signs of the Zodiac as your star sign.";
             reprompt = "Set your star sign, for example, say; set my star sign to Scorpio.";
             successStatus = 'Failure';
         }
         console.log('Status:', successStatus,',Star sign set to:', setStarSign);
-        // emit the response, keep daily horoscope open
-        this.emit(':ask', speechOutput, reprompt);
-    },
+        return handlerInput.responseBuilder
+            .speak(speechOutput)
+            .reprompt(reprompt)
+            .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+            .getResponse();
+    }
+
 };
 
 const GetUserZodiacSignIntent = {
-    handle (handlerInput) {
-        var request = handlerInput.RequestEnvelope.request;
-        return request.type === 'IntentRequest'
-            && request.intent.name === "GerUserZodiacSignIntent";
-    },
     canHandle (handlerInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        return request.type === 'IntentRequest'
+            && request.intent.name === 'GetUserZodiacSignIntent';
+    },
+    handle (handlerInput) {
         console.log('Request:', handlerInput.RequestEnvelope.request.intent.name);
         speechOutput = "";
         reprompt = "";
         if( this.attributes['existingStarSign'] ) {
+            console.log('Status:', successStatus, 'Retrieved star sign:', existingStarSign);
             existingStarSign = this.attributes['existingStarSign'];
             speechOutput = "Your star sign is set to " + existingStarSign + ". You're welcome to change it, or, you can hear your horoscope for the day.";
             reprompt = "You can change your saved star sign by asking, for example, set my star sign to Scorpio.";
             successStatus = 'Success';
-            console.log('Status:', successStatus, 'Retrieved star sign:', existingStarSign);
-            return handlerInput.responseBuilder
-                .speak(speechOutput)
-                .reprompt(reprompt)
-                // TODO: improve visual response using existingStarSign
-                .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
-                .getResponse();
         } else {
+            console.log('Status:', successStatus, 'Retrieved star sign:', existingStarSign);
             speechOutput = "My crystal ball appears faulty, please enlighten me, what would you like to save as your star sign, or, you can ask for the horoscope of any other star sign?";
             reprompt = "Save your star sign for convenience, for example, my star sign is Scorpio, and have easy access to your daily, updated horoscope.";
             successStatus = 'Failure';
-            console.log('Status:', successStatus, 'Retrieved star sign:', existingStarSign);
-            return handlerInput.responseBuilder
-                .speak(speechOutput)
-                .reprompt(reprompt)
-                // TODO: improve visual response using existingStarSign
-                .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
-                .getResponse();
         };
+        return handlerInput.responseBuilder
+            .speak(speechOutput)
+            .reprompt(reprompt)
+            // TODO: improve visual response using existingStarSign
+            .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+            .getResponse();
     }
 };
 
 
-// var CFIRGetHosorscopeFromDateIntent = {
-//     canHandle (handlerInput) {
-//         const request = handlerInput.RequestEnvelope.request;
-//         return request.type = "CanFulfillIntentRequest"
-//         && request.intent.name = "GetHosorscopeFromDateIntent";
-//     }
-//     handle (handlerInput) {
-//         const request = handlerInput.RequestEnvelope.request;
-//         const slotValue = request.intent.slots.date;
-//         if (dateValidator(request)) {
-//
-//         }
-//     }
-// };
-
-var GetHosorscopeFromDateIntent = {
+const CFIRGetHoroscopeFromDateIntent = {
     canHandle (handlerInput) {
         const request = handlerInput.RequestEnvelope.request;
-        return request.type === "IntentRequest"
-            && request.intent.name === "GetHosorscopeFromDateIntent";
+        return request.type = "CanFulfillIntentRequest"
+        && request.intent.name = "GetHoroscopeFromDateIntent";
+    },
+    handle (handlerInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        const compareToDate = request.intent.slots.dateForHoroscope.value;
+        if ( validateDate(compareToDate) ) {
+            console.log("CFIR GetHoroscopeFromDateIntent: YES")
+            return handlerInput.responseBuilder
+                .withCanFulfillIntent(
+                    {
+                        "canFulfill": "YES",
+                        "slots":{
+                            "dateForHoroscope": {
+                                "canUnderstand": "YES",
+                                "canFulfill": "YES"
+                            }
+                        }
+                    })
+                .getResponse();
+
+        } else {
+            console.log("CFIR GetHoroscopeFromDateIntent: NO")
+            return handlerInput.responseBuilder
+                .withCanFulfillIntent(
+                    {
+                        "canFulfill": "YES",
+                        "slots":{
+                            "dateForHoroscope": {
+                                "canUnderstand": "YES",
+                                "canFulfill": "NO"
+                            }
+                        }
+                    })
+                .getResponse();
+        }
+    }
+};
+
+const GetHoroscopeFromDateIntent = {
+    canHandle (handlerInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        return request.type === 'IntentRequest'
+            && request.intent.name === 'GetHoroscopeFromDateIntent';
     },
     handle (handlerInput) {
         const request = handlerInput.RequestEnvelope.request;
@@ -417,7 +627,7 @@ var GetHosorscopeFromDateIntent = {
         reprompt = "";
         // collect the date slot value
         compareToDate = new Date(request.intent.slots.dateForHoroscope.value);
-        var dateStarSign = starSignFromDate(compareToDate);
+        const dateStarSign = starSignFromDate(compareToDate);
         // check that the star sign was returned correctly from the date
         if ( dateStarSign ) {
             // get the horoscope for the star sign
@@ -462,6 +672,47 @@ var GetHosorscopeFromDateIntent = {
     }
 };
 
+const LaunchRequestHandler = {
+    canhandle (handerInput) {
+        const request = handlerInput.RequestEnvelope.request;
+        return request.type === 'LaunchRequest';
+    },
+    handle (handlerInput) {
+        console.log('Request:', handlerInput.RequestEnvelope.request.intent.name);
+        // if there is no stored horoscope
+        if ( Object.keys(this.attributes).length === 0 ) {
+            console.log('Status: New user!');
+            this.emit(':ask', welcomeOutput, welcomeReprompt);
+        } else {
+            starSign = this.attributes['existingStarSign'];
+            existingStarSign = this.attributes['existingStarSign'];
+            console.log('Returning user with star sign:', existingStarSign);
+            getHoroscope( starSign, (reading) => {
+                if ( reading ) {
+                    successStatus = 'Success';
+                    speechOutput = "Your daily horoscope for " + starSign + " is. " + reading + " You can hear other horoscopes, or, change your saved star sign. Just say stop to end.";
+                    reprompt = "If you enjoy listening to your Daily Horoscope, let us know by reviewing this skill in the Alexa Store!";
+                } else {
+                    if ( isAlphaTextString(starSign) ) {
+                        failedContext = starSign;
+                    } else {
+                        failedContext = "that";
+                    }
+                    successStatus = 'Failure';
+                    speechOutput = "Oh no, there appears to be a problem today with my crystal ball for " + failedContext + "! I'll have to give it a polish, please try again tomorrow!";
+                    reprompt = "While I'm busy, you can ask for the star sign or horoscope of a specific date, or discover the compatibility between your and your partner's star signs.";
+                }
+                console.log('Status:', successStatus,',Star sign queried:', starSign);
+                return handlerInput.responseBuilder
+                    .speak(speechOutput)
+                    .reprompt(reprompt)
+                    .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+                    .getResponse()
+            });
+        }
+    }
+};
+
 // function name can be anything, canhandle dictates what it handles
 const HelpIntentHandler = {
     canhandle(handlerInput) {
@@ -475,7 +726,6 @@ const HelpIntentHandler = {
         console.log('Request:', handlerInput.RequestEnvelope.request.intent.name);
         speechOutput = "Your Daily Horoscope skill has five, fun functionalities. You can get horoscope readings by star sign, get the star sign or horoscope for someone born on a specific date, find out the relationship compatibility between two star signs, and you can set your star sign and then get a daily horoscope reading by simply asking Daily Horoscope for my daily horoscope!";
         reprompt = "Try something like, set my star sign to Taurus, or what is the horoscope for Scorpio?";
-
         return handlerInput.responseBuilder
             .speak(speechOutput)
             .reprompt(reprompt)
@@ -483,13 +733,14 @@ const HelpIntentHandler = {
             .getResponse();
     }
 };
+
 const StopIntentHandler = {
     canHandle(handlerInput) {
         const request = handlerInput.RequestEnvelope.request;
         return request.type === 'IntentRequest'
             && (request.intent.name === 'AMAZON.CancelIntent'
             || reqest.intent.name === 'AMAZON.StopIntent');
-    }
+    },
     handle(handlerInput) {
         console.log('Request:', handlerInput.RequestEnvelope.request.intent.name);
         speechOutput = getRandomItem(["Goodbye","See you next time", "Bye", "Cheers", ""]);
@@ -499,18 +750,19 @@ const StopIntentHandler = {
             .getResponse();
     }
 };
-const SessionEndedReflectorHandler = {
-  canHandle(handlerInput){
-    return handlerInput.requestEnvelope.request.type === `SessionEndedRequest`;
-  },
-  handle(handlerInput){
-      const request = handlerInput.requestEnvelope.request;
-      console.log(`~~~~~~~~~~~~~~~~~~~`);
-      console.log(request.type + " " + request.reason);
-      console.log(`~~~~~~~~~~~~~~~~~~~`);
-      // this makes sure to save the session data in case of an unexpected end to the session
-      this.emit(':saveState', true);
-  }
+
+const SessionEndedRequestHandler = {
+    canHandle(handlerInput){
+        return handlerInput.requestEnvelope.request.type === `SessionEndedRequest`;
+    },
+    handle(handlerInput){
+        const request = handlerInput.requestEnvelope.request;
+        console.log(`~~~~~~~~~~~~~~~~~~~`);
+        console.log(request.type + " " + request.reason);
+        console.log(`~~~~~~~~~~~~~~~~~~~`);
+        // this makes sure to save the session data in case of an unexpected end to the session
+        this.emit(':saveState', true);
+    }
 };
 
 // 3. Functions  =================================================================================================
@@ -529,19 +781,6 @@ function isAlphaTextString ( text ) {
         isAlphaText = true;
     }
     return isAlphaText;
-}
-
-// Validate incoming star sign
-function validateStarSign(starSignInQuestion) {
-    var legitStarSign = false;
-    if ( isAlphaTextString(starSignInQuestion) ) {
-        allStarSigns.forEach( function(starSignToCompare) {
-            if ( starSignToCompare.toUpperCase() == starSignInQuestion.toUpperCase() ) {
-                legitStarSign = true;
-            }
-        });
-    }
-    return legitStarSign;
 }
 
 function getStoredCompatibility(callback) {
@@ -750,7 +989,7 @@ function starSignFromDate(dateToCompare) {
     console.error("starSignFromDate for date = ", JSON.stringify(dateToCheck);
     var starSignForDate = '';
     // checks that the date passed is a valid date
-    if ( dateValidator(dateToCompare) ) {
+    if ( validateDate(dateToCompare) ) {
         var compareYear = dateToCompare.getFullYear() || 2020;
         // loop through the star sign dates, if the date lies in the date range then return the relevant star sign
         Object.keys(data.starSignDates).some( function(checkStarSign) {
@@ -769,7 +1008,21 @@ function starSignFromDate(dateToCompare) {
     }
 };
 
-function dateValidator (dateToCheck) {
+// Validatation function incoming star sign
+function validateStarSign(starSignInQuestion) {
+    var legitStarSign = false;
+    if ( isAlphaTextString(starSignInQuestion) ) {
+        allStarSigns.forEach( function(starSignToCompare) {
+            if ( starSignToCompare.toUpperCase() == starSignInQuestion.toUpperCase() ) {
+                legitStarSign = true;
+            }
+        });
+    }
+    return legitStarSign;
+}
+
+// Validation function for dates
+function validateDate (dateToCheck) {
     return dateToCheck && Object.prototype.toString.call(dateToCheck) === "[object Date]" && !isNaN(dateToCheck);
 }
 
@@ -780,30 +1033,27 @@ exports.handler = skillBuilder
     .withSkillId(appId)
     // Order matters
     .addRequestHandlers(
-        Handlers,
-        HelpIntentHandler,
-        GetHosorscopeFromDateIntent,
+        CFIRGetSpecificHoroscopeIntent, // TODO: create
+        GetSpecificHoroscopeIntent, // TODO: create
+        CFIRGetUserHoroscopeIntent, // TODO: create
+        GetUserHoroscopeIntent, // TODO: create
+        CFIRGetZoidicSignFromDateIntent,
+        GetZoidicSignFromDateIntent,
+        CFIRGetHoroscopeFromDateIntent,
+        GetHoroscopeFromDateIntent,
+        CFIRGetUserZodiacSignIntent, // TODO: create
         GetUserZodiacSignIntent,
-
-
-        CFIRAboutIntentHandler,
-        AboutIntentHandler,
-        LaunchHandler,
-        StopHandler,
-        IntentReflectorHandler
-
-
+        CFIRSetUserZodiacSignIntent,
+        SetUserZodiacSignIntent,
+        CFIRGetCompatibilityIntent,
+        GetCompatibilityIntent,
+        LaunchRequestHandler,
+        HelpIntentHandler
     )
     // Order matters
     .addErrorHandlers(
         StopIntentHandler,
-        SessionEndedReflectorHandler,
-
-        CFIRErrorHandler,
-        RequestHandlerChainErrorHandler,
-        ErrorHandler
-
-
+        SessionEndedRequestHandler,
     )
     .withTableName(sessionEventsTableName)
     .withAutoCreateTable(false)
