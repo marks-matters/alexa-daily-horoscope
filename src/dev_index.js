@@ -240,7 +240,7 @@ const GetUserHoroscopeIntent = {
         .speak(speechOutput)
         .reprompt(reprompt)
         .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
-        .getResponse()
+        .getResponse();
     // user has already set their star sign
     } else {
       starSign = this.attributes["existingStarSign"];
@@ -269,7 +269,7 @@ const GetUserHoroscopeIntent = {
           .speak(speechOutput)
           .reprompt(reprompt)
           .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
-          .getResponse()
+          .getResponse();
       });
     }
   }
@@ -365,8 +365,8 @@ const CFIRGetCompatibilityIntent = {
   },
   handle(handleInput) {
     const request = handlerInput.RequestEnvelope.request;
-    const zodicSignA = request.intent.slots.zodicSignA.value;
-    const zodicSignB = request.intent.slots.zodicSignB.value;
+    const zodiacSignA = request.intent.slots.zodicSignA.value;
+    const zodiacSignB = request.intent.slots.zodicSignB.value;
     if (validateStarSign(zodiacSignA) && validateStarSign(zodiacSignB)) {
       console.log("CFIR GetCompatibilityIntent: YES, zodicSignA: YES, zodicSignB: YES");
       return handlerInput.responseBuilder
@@ -795,14 +795,14 @@ const LaunchRequestHandler = {
           + "! I'll have to give it a polish, please try again later!";
         reprompt =
           "While I'm busy, you can ask for the star sign or horoscope of a specific date, or discover the compatibility between your and your partner's star signs.";
-      }
+      });
       console.log("Status:", successStatus, ", Star sign queried:", starSign);
       return handlerInput.responseBuilder
         .speak(speechOutput)
         .reprompt(reprompt)
         .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
         .getResponse();
-    });
+    }
   }
 };
 
@@ -835,7 +835,7 @@ const StopIntentHandler = {
     return (request.type === "IntentRequest"
       && (
         request.intent.name === "AMAZON.CancelIntent"
-        || reqest.intent.name === "AMAZON.StopIntent"
+        || request.intent.name === "AMAZON.StopIntent"
       )
     );
   },
@@ -930,12 +930,11 @@ function getCompatibility(starSignBase, starSignPartner, callback) {
   }
 }
 
-// Iterates through the list of missing star signs and calls a download and then
-// DB update function
+// Iterates through the list of missing star signs and calls a download and then DB update function
 function horoscopeDownloadAndDbUpdate(horoscopeList, callback) {
   var successStatus = false;
   var missingList = horoscopeList;
-  function getNextReading() {
+  (function getNextReading() {
     var getStarSign = missingList.splice(0, 1)[0];
     try {
       downloadHoroscope(getStarSign, (updateStarSign, scrapedHoroscope) => {
@@ -951,7 +950,7 @@ function horoscopeDownloadAndDbUpdate(horoscopeList, callback) {
     } catch (exception) {
       callback(exception);
     }
-  }();
+  })();
 }
 
 function downloadHoroscope(downloadStarSign, callback) {
@@ -1095,7 +1094,7 @@ function getHoroscope(retrieveStarSign, callback) {
 }
 
 function starSignFromDate(dateToCompare) {
-  console.error("starSignFromDate for date = ", JSON.stringify(dateToCheck));
+  console.log("starSignFromDate for date:", JSON.stringify(dateToCompare));
   var starSignForDate = "";
   // checks that the date passed is a valid date
   if (validateDate(dateToCompare)) {
