@@ -1,0 +1,30 @@
+{
+  "name": "alexa-daily-horoscope",
+  "version": "2.0.0",
+  "description": "An Alexa Skill that provides a daily horoscope reading",
+  "private": true,
+  "dependencies": {
+    "ask-sdk": "^2.8.0",
+    "aws-sdk": "^2.650.0",
+    "i18next": "^19.3.4"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marks-matters/alexa-daily-horoscope.git"
+  },
+  "keywords": [
+    "Alexa",
+    "Horoscope",
+    "Amazon"
+  ],
+  "author": "marks-matters",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/marks-matters/alexa-daily-horoscope/issues"
+  },
+  "homepage": "https://github.com/marks-matters/alexa-daily-horoscope#readme"
+}
