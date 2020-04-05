@@ -4,5 +4,16 @@
 # Log file
 *.log
 
-# Package Files
+# Package files
 *.zip
+
+# Testing folder
+tests/
+
+# Node modules
+node_modules/
+
+# Sketch files
+*.sketch
+
+package-lock.json
