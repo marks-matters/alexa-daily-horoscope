@@ -6,7 +6,7 @@ const AWS = require("aws-sdk");
 var https = require("https");
 
 /* 1. DECLARATIONS ================================================================================ */
-const appId = "",
+const appId = "amzn1.ask.skill.d373228d-ef5c-4a0c-a005-583c0d25bf11",
   AWSregion = "us-east-1",
   sessionEventsTableName = "daily_horoscope_users",
   displayTextTitle = "Your Daily Horoscope by marks_matters",
@@ -150,6 +150,11 @@ const LaunchRequestHandler = {
         speechOutput =
           "Your daily horoscope for " + starSignQueried + " is: " + reading
           + " You can hear other horoscopes, or, change your saved star sign.";
+          console.log("STATUS:", successStatus, ", Star sign queried:", starSignQueried);
+          return handlerInput.responseBuilder
+            .speak(speechOutput)
+            .withSimpleCard(displayTextTitle, speechOutput)
+            .getResponse();
       } else {
         successStatus = "Failure";
         speechOutput = "Oh no, there appears to be a problem today with my crystal ball for " + starSignQueried
@@ -165,11 +170,9 @@ const LaunchRequestHandler = {
         reprompt =
           "While I'm busy, you can ask for the star sign or horoscope of a specific date, or discover the compatibility between your and your partner's star signs.";
       } else {
-        return handlerInput.responseBuilder
-          .speak(welcomeOutput)
-          .reprompt(welcomeReprompt)
-          .withSimpleCard(displayTextTitle, welcomeOutput)
-          .getResponse();
+        successStatus = "Success";
+        speechOutput = welcomeOutput;
+        reprompt = welcomeReprompt;
       }
     }
     console.log("STATUS:", successStatus, ", Star sign queried:", starSignQueried);
