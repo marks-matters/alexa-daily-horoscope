@@ -119,6 +119,7 @@ const SaveUserDataInterceptor = {
         handlerInput.attributesManager.savePersistentAttributes()
         .then(() => {
           console.log("User star sign updated to:", updatedStarSign);
+          updatedStarSign = "";
           resolve();
         })
         .catch((err) => {
@@ -1147,6 +1148,8 @@ function saveUserData(handlerInput, starSignAttribute) {
       handlerInput.attributesManager.setPersistentAttributes(attributes);
       handlerInput.attributesManager.savePersistentAttributes()
       .then(() => {
+        // Clear any other saved star signs so we don't override the star sign we just saved.
+        updatedStarSign = "";
         resolve();
       })
       .catch((err) => {
@@ -1159,17 +1162,6 @@ function saveUserData(handlerInput, starSignAttribute) {
     }
   });
 }
-
-// function saveUserData(handlerInput, starSignAttribute) {
-//   if (validateStarSign(starSignAttribute)) {
-//     let mappAttr = {
-//       "userStarSign": starSignAttribute
-//     }
-//     handlerInput.attributesManager.setPersistentAttributes(mappAttr);
-//     handlerInput.attributesManager.savePersistentAttributes()
-//       .catch(error => console.log("ERROR: Failed to save user star sign to table horoscopeUsers_starsign.", error));
-//   }
-// }
 
 /* STAR SIGN VALIDATION */
 function validateStarSign(starSignInQuestion) {
