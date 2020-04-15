@@ -5,8 +5,7 @@
   "private": true,
   "dependencies": {
     "ask-sdk": "^2.8.0",
-    "aws-sdk": "^2.650.0",
-    "i18next": "^19.3.4"
+    "aws-sdk": "^2.653.0"
   },
   "main": "index.js",
   "scripts": {

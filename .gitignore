@@ -7,11 +7,12 @@
 # Package files
 *.zip
 
-# Testing folder
+# Testing folders
 tests/
+archive/
 
 # Node modules
-node_modules/
+lambda/node_modules/
 
 # Sketch files
 *.sketch
