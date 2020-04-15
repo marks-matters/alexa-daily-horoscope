@@ -9,6 +9,7 @@ var https = require("https");
 const appId = "",
   AWSregion = "us-east-1",
   sessionEventsTableName = "daily_horoscope_users",
+  displayTextTitle = "Your Daily Horoscope by marks_matters",
   data = {
     starSignDates: {
       aries: { fromDate: "03-21", toDate: "04-19" },
@@ -166,7 +167,7 @@ const LaunchRequestHandler = {
         return handlerInput.responseBuilder
           .speak(welcomeOutput)
           .reprompt(welcomeReprompt)
-          .withSimpleCard("Daily Horoscope Skill by marks_matters", welcomeOutput)
+          .withSimpleCard(displayTextTitle, welcomeOutput)
           .getResponse();
       }
     }
@@ -174,7 +175,7 @@ const LaunchRequestHandler = {
     return handlerInput.responseBuilder
       .speak(speechOutput)
       .reprompt(reprompt)
-      .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+      .withSimpleCard(displayTextTitle, speechOutput)
       .getResponse();
   }
 };
@@ -275,7 +276,7 @@ const GetSpecificHoroscopeIntent = {
     return handlerInput.responseBuilder
       .speak(speechOutput)
       .reprompt(reprompt)
-      .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+      .withSimpleCard(displayTextTitle, speechOutput)
       .getResponse();
   }
 };
@@ -327,7 +328,7 @@ const GetUserHoroscopeIntent = {
         console.log("STATUS:", successStatus, ", Star sign queried:", starSignQueried);
         return handlerInput.responseBuilder
           .speak(speechOutput)
-          .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+          .withSimpleCard(displayTextTitle, speechOutput)
           .getResponse();
       } else {
         successStatus = "Failure";
@@ -351,7 +352,7 @@ const GetUserHoroscopeIntent = {
     return handlerInput.responseBuilder
       .speak(speechOutput)
       .reprompt(reprompt)
-      .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+      .withSimpleCard(displayTextTitle, speechOutput)
       .getResponse();
   }
 };
@@ -433,7 +434,7 @@ const GetZoidicSignFromDateIntent = {
     return handlerInput.responseBuilder
       .speak(speechOutput)
       .reprompt(reprompt)
-      .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+      .withSimpleCard(displayTextTitle, speechOutput)
       .getResponse();
   }
 };
@@ -446,10 +447,10 @@ const CFIRGetCompatibleZodiacSignIntent = {
   },
   handle(handlerInput) {
     const request = handlerInput.requestEnvelope.request;
-    const zodiacSignA = request.intent.slots.zodicSignA.value;
-    const zodiacSignB = request.intent.slots.zodicSignB.value;
+    const zodiacSignA = request.intent.slots.zodiacSignA.value;
+    const zodiacSignB = request.intent.slots.zodiacSignB.value;
     if (validateStarSign(zodiacSignA) && validateStarSign(zodiacSignB)) {
-      console.log("CFIR GetCompatibleZodiacSignIntent: YES, zodicSignA: YES, zodicSignB: YES");
+      console.log("CFIR GetCompatibleZodiacSignIntent: YES, zodiacSignA: YES, zodiacSignB: YES");
       return handlerInput.responseBuilder
         .withCanFulfillIntent({
           canFulfill: "YES",
@@ -467,7 +468,7 @@ const CFIRGetCompatibleZodiacSignIntent = {
         .getResponse();
     } else {
       if (validateStarSign(zodiacSignA)) {
-        console.log("CFIR GetCompatibleZodiacSignIntent: MAYBE, zodicSignA: YES, zodicSignB: NO");
+        console.log("CFIR GetCompatibleZodiacSignIntent: MAYBE, zodiacSignA: YES, zodiacSignB: NO");
         return handlerInput.responseBuilder
           .withCanFulfillIntent({
             canFulfill: "MAYBE",
@@ -485,7 +486,7 @@ const CFIRGetCompatibleZodiacSignIntent = {
           .getResponse();
       } else {
         if (validateStarSign(zodiacSignB)) {
-          console.log("CFIR GetCompatibleZodiacSignIntent: MAYBE, zodicSignA: NO, zodicSignB: YES");
+          console.log("CFIR GetCompatibleZodiacSignIntent: MAYBE, zodiacSignA: NO, zodiacSignB: YES");
           return handlerInput.responseBuilder
             .withCanFulfillIntent({
               canFulfill: "MAYBE",
@@ -502,7 +503,7 @@ const CFIRGetCompatibleZodiacSignIntent = {
             })
             .getResponse();
         } else {
-          console.log("CFIR GetCompatibleZodiacSignIntent: MAYBE, zodicSignA: NO, zodicSignB: NO");
+          console.log("CFIR GetCompatibleZodiacSignIntent: MAYBE, zodiacSignA: NO, zodiacSignB: NO");
           return handlerInput.responseBuilder
             .withCanFulfillIntent({
               canFulfill: "MAYBE",
@@ -575,7 +576,7 @@ const GetCompatibleZodiacSignIntent = {
     return handlerInput.responseBuilder
       .speak(speechOutput)
       .reprompt(reprompt)
-      .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+      .withSimpleCard(displayTextTitle, speechOutput)
       .getResponse();
     }
   };
@@ -661,7 +662,7 @@ const SetUserZodiacSignIntent = {
     return handlerInput.responseBuilder
       .speak(speechOutput)
       .reprompt(reprompt)
-      .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+      .withSimpleCard(displayTextTitle, speechOutput)
       .getResponse();
   }
 };
@@ -720,7 +721,7 @@ const GetUserZodiacSignIntent = {
       .speak(speechOutput)
       .reprompt(reprompt)
       // TODO: improve visual response using userStarSign
-      .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+      .withSimpleCard(displayTextTitle, speechOutput)
       .getResponse();
   }
 };
@@ -805,7 +806,7 @@ const GetHoroscopeFromDateIntent = {
       return handlerInput.responseBuilder
         .speak(speechOutput)
         .reprompt(reprompt)
-        .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+        .withSimpleCard(displayTextTitle, speechOutput)
         .getResponse();
     } else {
       speechOutput = "Hmmm, I don't quite know that date, please try a Gregorian calendar date.";
@@ -818,7 +819,7 @@ const GetHoroscopeFromDateIntent = {
           .speak(speechOutput)
           .reprompt(reprompt)
           // TODO: display error response to user
-          .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+          .withSimpleCard(displayTextTitle, speechOutput)
           .getResponse()
       );
     }
@@ -843,7 +844,7 @@ const HelpIntentHandler = {
     return handlerInput.responseBuilder
       .speak(speechOutput)
       .reprompt(reprompt)
-      .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+      .withSimpleCard(displayTextTitle, speechOutput)
       .getResponse();
   }
 };
@@ -867,7 +868,7 @@ const StopIntentHandler = {
     ]);
     return handlerInput.responseBuilder
       .speak(speechOutput)
-      .withSimpleCard("Daily Horoscope Skill by marks_matters", speechOutput)
+      .withSimpleCard(displayTextTitle, speechOutput)
       .getResponse();
   }
 };
