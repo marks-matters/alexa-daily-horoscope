@@ -86,6 +86,7 @@ AWS.config.update({region: AWSregion});
 /* 2. INTERCEPTORS ========================================================================================= */
 const GetUserDataInterceptor = {
   process(handlerInput) {
+    // Fetch the user's star sign from session or stored data
     let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
     if ( Object.keys(sessionAttributes).length === 0 ) {
       return new Promise((resolve, reject) => {
@@ -99,7 +100,7 @@ const GetUserDataInterceptor = {
         })
         .catch((error) => {
           console.log("NEW USER!");
-          reject(error);
+          resolve();
         })
       });
     } else if (validateStarSign(sessionAttributes["userStarSign"])) {
@@ -107,7 +108,7 @@ const GetUserDataInterceptor = {
       updatedStarSign = userStarSign;
       console.log("Returning user with star sign:", userStarSign);
     }
-  },
+  }
 };
 
 const SaveUserDataInterceptor = {
@@ -173,6 +174,7 @@ const LaunchRequestHandler = {
         successStatus = "Success";
         speechOutput = welcomeOutput;
         reprompt = welcomeReprompt;
+        starSignQueried = "None, welcomed instead";
       }
     }
     console.log("STATUS:", successStatus, ", Star sign queried:", starSignQueried);
@@ -193,10 +195,11 @@ const CFIRGetSpecificHoroscopeIntent = {
   async handle(handlerInput) {
     const request = handlerInput.requestEnvelope.request;
     starSignQueried = request.intent.slots.zodiacSign.value;
+    console.log("Request: CFIR" + request.intent.name + ", Star sign queried:", starSignQueried);
     if (validateStarSign(starSignQueried)) {
       var text = await getHoroscope(starSignQueried);
       if (text) {
-        console.log("CFIR GetSpecificHoroscopeIntent, reading: YES, zodiacSign: YES");
+        console.log("CFIR: YES, reading:YES, zodiacSign: YES");
         return handlerInput.responseBuilder
           .withCanFulfillIntent({
             canFulfill: "YES",
@@ -209,7 +212,7 @@ const CFIRGetSpecificHoroscopeIntent = {
           })
           .getResponse();
       } else {
-        console.log("CFIR GetSpecificHoroscopeIntent, reading: NO, zodiacSign: YES");
+        console.log("CFIR: NO, reading: NO, zodiacSign: YES");
         return handlerInput.responseBuilder
           .withCanFulfillIntent({
             canFulfill: "NO",
@@ -223,7 +226,7 @@ const CFIRGetSpecificHoroscopeIntent = {
           .getResponse();
       }
     } else {
-      console.log("CFIR GetSpecificHoroscopeIntent, zodiacSign: MAYBE");
+      console.log("CFIR: NO, zodiacSign: MAYBE");
       return handlerInput.responseBuilder
         .withCanFulfillIntent({
           canFulfill: "MAYBE",
@@ -292,8 +295,9 @@ const CFIRGetUserHoroscopeIntent = {
       && request.intent.name === "GetUserHoroscopeIntent";
   },
   handle(handlerInput) {
+    console.log("Request: CFIR" + handlerInput.requestEnvelope.request.intent.name + ", user star sign:", userStarSign);
     if (userStarSign == "") {
-      console.log("CFIR GetUserHoroscopeIntent: MAYBE, userStarSign: NO");
+      console.log("CFIR: MAYBE, userStarSign: NO");
       return handlerInput.responseBuilder
         .withCanFulfillIntent({
           canFulfill: "MAYBE"
@@ -301,7 +305,7 @@ const CFIRGetUserHoroscopeIntent = {
         )
         .getResponse();
     } else {
-      console.log("CFIR GetUserHoroscopeIntent: YES, userStarSign: YES");
+      console.log("CFIR: YES, userStarSign: YES");
       return handlerInput.responseBuilder
         .withCanFulfillIntent({
           canFulfill: "YES"
@@ -369,11 +373,11 @@ const CFIRGetZoidicSignFromDateIntent = {
   },
   handle(handlerInput) {
     const request = handlerInput.requestEnvelope.request;
-    console.log("Request:", request.intent.name);
     compareToDate = new Date(request.intent.slots.dateForZodiacSign.value);
+    console.log("Request: CFIR" + request.intent.name + ", date:", compareToDate);
     const dateStarSign = starSignFromDate(compareToDate);
     if (validateDate(compareToDate) && dateStarSign) {
-      console.log("CFIR GetZoidicSignFromDateIntent: YES, dateStarSign: YES");
+      console.log("CFIR: YES, dateStarSign: YES");
       return handlerInput.responseBuilder
         .withCanFulfillIntent({
           canFulfill: "YES",
@@ -386,7 +390,7 @@ const CFIRGetZoidicSignFromDateIntent = {
         })
         .getResponse();
     } else {
-      console.log("CFIR GetZoidicSignFromDateIntent: MAYBE, compareToDate/dateStarSign: NO");
+      console.log("CFIR: MAYBE, compareToDate/dateStarSign: NO");
       return handlerInput.responseBuilder
         .withCanFulfillIntent({
           canFulfill: "MAYBE",
@@ -453,8 +457,9 @@ const CFIRGetCompatibleZodiacSignIntent = {
     const request = handlerInput.requestEnvelope.request;
     const zodiacSignA = request.intent.slots.zodiacSignA.value;
     const zodiacSignB = request.intent.slots.zodiacSignB.value;
+    console.log("Request: CFIR" + request.intent.name + ", zodiacSignA:", zodiacSignA + ", zodiacSignB:", zodiacSignB);
     if (validateStarSign(zodiacSignA) && validateStarSign(zodiacSignB)) {
-      console.log("CFIR GetCompatibleZodiacSignIntent: YES, zodiacSignA: YES, zodiacSignB: YES");
+      console.log("CFIR: YES, zodiacSignA: YES, zodiacSignB: YES");
       return handlerInput.responseBuilder
         .withCanFulfillIntent({
           canFulfill: "YES",
@@ -472,7 +477,7 @@ const CFIRGetCompatibleZodiacSignIntent = {
         .getResponse();
     } else {
       if (validateStarSign(zodiacSignA)) {
-        console.log("CFIR GetCompatibleZodiacSignIntent: MAYBE, zodiacSignA: YES, zodiacSignB: NO");
+        console.log("CFIR: MAYBE, zodiacSignA: YES, zodiacSignB: NO");
         return handlerInput.responseBuilder
           .withCanFulfillIntent({
             canFulfill: "MAYBE",
@@ -490,7 +495,7 @@ const CFIRGetCompatibleZodiacSignIntent = {
           .getResponse();
       } else {
         if (validateStarSign(zodiacSignB)) {
-          console.log("CFIR GetCompatibleZodiacSignIntent: MAYBE, zodiacSignA: NO, zodiacSignB: YES");
+          console.log("CFIR: MAYBE, zodiacSignA: NO, zodiacSignB: YES");
           return handlerInput.responseBuilder
             .withCanFulfillIntent({
               canFulfill: "MAYBE",
@@ -507,7 +512,7 @@ const CFIRGetCompatibleZodiacSignIntent = {
             })
             .getResponse();
         } else {
-          console.log("CFIR GetCompatibleZodiacSignIntent: MAYBE, zodiacSignA: NO, zodiacSignB: NO");
+          console.log("CFIR: MAYBE, zodiacSignA: NO, zodiacSignB: NO");
           return handlerInput.responseBuilder
             .withCanFulfillIntent({
               canFulfill: "MAYBE",
@@ -594,8 +599,9 @@ const CFIRSetUserZodiacSignIntent = {
   handle(handlerInput) {
     const request = handlerInput.requestEnvelope.request;
     const setStarSign = request.intent.slots.inputZodiacSign.value;
+    console.log("Request: CFIR" + request.intent.name + ", set star sign to:", setStarSign);
     if (validateStarSign(setStarSign)) {
-      console.log("CFIR SetUserZodiacSignIntent: YES, inputZodiacSign: YES");
+      console.log("CFIR: YES, inputZodiacSign: YES");
       return handlerInput.responseBuilder
         .withCanFulfillIntent({
           canFulfill: "YES",
@@ -608,7 +614,7 @@ const CFIRSetUserZodiacSignIntent = {
         })
         .getResponse();
     } else {
-      console.log("CFIR SetUserZodiacSignIntent: MAYBE, inputZodiacSign: NO");
+      console.log("CFIR: MAYBE, inputZodiacSign: NO");
       return handlerInput.responseBuilder
         .withCanFulfillIntent({
           canFulfill: "MAYBE",
@@ -678,8 +684,9 @@ const CFIRGetUserZodiacSignIntent = {
       && request.intent.name === "GetUserZodiacSignIntent";
   },
   handle(handlerInput) {
+    console.log("Request: CFIR" + handlerInput.requestEnvelope.request.intent.name + ", user star sign:", userStarSign);
     if ( userStarSign !== "" ) {
-      console.log("CFIR GetUserZodiacSignIntent: YES, userStarSign: YES");
+      console.log("CFIR: YES, userStarSign: YES");
       return handlerInput.responseBuilder
         .withCanFulfillIntent({
           canFulfill: "YES"
@@ -687,7 +694,7 @@ const CFIRGetUserZodiacSignIntent = {
         )
         .getResponse();
     } else {
-      console.log("CFIR GetUserZodiacSignIntent: NO, userStarSign: NO");
+      console.log("CFIR: NO, userStarSign: NO");
       return handlerInput.responseBuilder
         .withCanFulfillIntent({
           canFulfill: "MAYBE"
@@ -739,8 +746,9 @@ const CFIRGetHoroscopeFromDateIntent = {
   handle(handlerInput) {
     const request = handlerInput.requestEnvelope.request;
     const compareToDate = request.intent.slots.dateForHoroscope.value;
+    console.log("Request: CFIR" + request.intent.name + ", date:", compareToDate);
     if (validateDate(compareToDate)) {
-      console.log("CFIR GetHoroscopeFromDateIntent: YES, compareToDate: YES");
+      console.log("CFIR: YES, compareToDate: YES");
       return handlerInput.responseBuilder
         .withCanFulfillIntent({
           canFulfill: "YES",
@@ -754,10 +762,10 @@ const CFIRGetHoroscopeFromDateIntent = {
         .getResponse();
     // TODO: Could be improved to handle both a date failure or a horoscope failure
     } else {
-      console.log("CFIR GetHoroscopeFromDateIntent: NO, compareToDate: NO");
+      console.log("CFIR: NO, compareToDate: NO");
       return handlerInput.responseBuilder
         .withCanFulfillIntent({
-          canFulfill: "MAYBE",
+          canFulfill: "NO",
           slots: {
             dateForHoroscope: {
               canUnderstand: "MAYBE",
@@ -892,7 +900,7 @@ const SessionEndedRequestHandler = {
 // Check that the supplied string does not contain any characters which may be unconverted HTML.
 function isTextString(text) {
   var isText = false;
-  if (/^[a-zA-Z][a-zA-Z0-9- !,?:'.();"]*$/.test(text) && typeof text != "undefined") {
+  if (/^[a-zA-Z][a-zA-Z0-9- !,?:'.();"]*$/.test(text) && typeof text !== "undefined") {
     isText = true;
   }
   return isText;
@@ -901,7 +909,7 @@ function isTextString(text) {
 // Check that the supplied string is only made up of alphabet characters.
 function isAlphaTextString(text) {
   var isAlphaText = false;
-  if (isTextString(text) && /^[a-zA-Z][a-zA-Z]*$/.test(text) && typeof text != "undefined") {
+  if (isTextString(text) && /^[a-zA-Z][a-zA-Z]*$/.test(text) && typeof text !== "undefined") {
     isAlphaText = true;
   }
   return isAlphaText;
