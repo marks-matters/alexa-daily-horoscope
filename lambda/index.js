@@ -40,26 +40,7 @@ const appId = "",
     "capricorn",
     "aquarius",
     "pisces"
-  ],
-  starSignSynonyms = {
-    taurus:       "bull",
-    cancer:       "crab",
-    aries:        "ram",
-    gemini:       "twins",
-    leo:          "lion",
-    virgo:        "maiden",
-    libra:        "scales",
-    scorpio:      "scorpius",
-    scorpio:      "scorpion",
-    sagittarius:  "centaur",
-    sagittarius:  "archer",
-    capricorn:    "capricornus",
-    capricorn:    "goat",
-    capricorn:    "sea-goat",
-    aquarius:     "water",
-    aquarius:     "water-bearer",
-    pisces:       "fish"
-  };
+  ];
 
 var now = new Date(),
   nowUTC = new Date(now),
@@ -103,8 +84,11 @@ AWS.config.update({region: AWSregion});
 /* 2. INTERCEPTORS ========================================================================================= */
 const GetUserDataInterceptor = {
   process(handlerInput) {
+    console.log("Intercepting!");
     // Fetch the user's star sign from session or stored data
     let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+    console.log(`sessionAttributes: ${sessionAttributes}`);
+    // TODO: fix this, for some reason we are checking session attributes and making fetching persistent dependent on that outcome.
     if ( Object.keys(sessionAttributes).length === 0 ) {
       return new Promise((resolve, reject) => {
         handlerInput.attributesManager.getPersistentAttributes()
@@ -112,6 +96,8 @@ const GetUserDataInterceptor = {
           if (validateStarSign(persistentAttributes["userStarSign"])) {
             userStarSign = persistentAttributes["userStarSign"];
             console.log(`Returning user with star sign: ${userStarSign}`);
+          } else {
+            console.log(`Dodgy saved star sign. ${persistentAttributes["userStarSign"]}`);
           }
           resolve();
         })
@@ -122,8 +108,10 @@ const GetUserDataInterceptor = {
       });
     } else if (validateStarSign(sessionAttributes["userStarSign"])) {
       userStarSign = sessionAttributes["userStarSign"];
-      updatedStarSign = userStarSign;
+      // updatedStarSign = userStarSign;
       console.log(`Returning user with star sign: ${userStarSign}`);
+    } else {
+      console.log(`Odd case.`);
     }
   }
 };
@@ -131,18 +119,27 @@ const GetUserDataInterceptor = {
 const SaveUserDataInterceptor = {
   process(handlerInput) {
     return new Promise((resolve, reject) => {
-      if(validateStarSign(updatedStarSign)) {
-        let attributes = {"userStarSign": updatedStarSign}
-        handlerInput.attributesManager.setPersistentAttributes(attributes);
+      let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+      if ( Object.keys(sessionAttributes).length !== 0 ) {
         handlerInput.attributesManager.savePersistentAttributes()
         .then(() => {
-          console.log(`User star sign updated to: ${updatedStarSign}`);
-          updatedStarSign = "";
+          console.log(`User star sign updated to: ${sessionAttributes}`);
+          new Promise((resolve, reject) => {
+            handlerInput.attributesManager.deletePersistentAttributes()
+            .then(() => {
+              console.log(`PersistentAttributes successfully cleared.`);
+              resolve();
+            })
+            .catch((error) => {
+              console.log(`ERROR: Failed to clear persistent attributes. ${error}`);
+              reject(error);
+            });
+          });
           resolve();
         })
-        .catch((err) => {
-          console.log(`ERROR: Failed to save user star sign to table daily_horoscope_users. ${err}`);
-          reject(err);
+        .catch((error) => {
+          console.log(`ERROR: Failed to save user star sign to table daily_horoscope_users. ${error}`);
+          reject(error);
         });
       } else {
         resolve();
@@ -272,6 +269,8 @@ const GetSpecificHoroscopeIntent = {
       if (userStarSign == "") {
         userStarSign = starSignQueried;
         updatedStarSign = userStarSign;
+        let persistentAttributes = {"userStarSign": updatedStarSign}
+        handlerInput.attributesManager.setPersistentAttributes(persistentAttributes);
       }
     }
     // get the horoscope of the star sign
@@ -434,6 +433,8 @@ const GetZoidicSignFromDateIntent = {
       if (userStarSign == "") {
         userStarSign = dateStarSign;
         updatedStarSign = userStarSign;
+        let persistentAttributes = {"userStarSign": updatedStarSign}
+        handlerInput.attributesManager.setPersistentAttributes(persistentAttributes);
       }
       successStatus = "Success";
       speechOutput = `The star sign for someone born on ${compareToDate.toLocaleString("en-GB", dateOptions)} is ${dateStarSign}.
@@ -571,6 +572,8 @@ const GetCompatibleZodiacSignIntent = {
       if (userStarSign == "") {
         userStarSign = starSignASlot;
         updatedStarSign = userStarSign;
+        let persistentAttributes = {"userStarSign": updatedStarSign}
+        handlerInput.attributesManager.setPersistentAttributes(persistentAttributes);
       }
     }
     var text = await getCompatibility(starSignASlot, starSignBSlot);
@@ -672,13 +675,21 @@ const SetUserZodiacSignIntent = {
       speechOutput = "Alright, your star sign will not be updated."
     } else {
       if (validateStarSign(setStarSign)) {
-        // TODO: add a promise here to handle the case that saving the user data fails.
         userStarSign = setStarSign;
-        var saveUserReponse = saveUserData(handlerInput, userStarSign);
-        successStatus = "Success";
-        speechOutput =
-          `Your star sign has been updated to ${userStarSign}.
-          Would you like to hear the horoscope for ${userStarSign}, or, you can hear the horoscope for any other star sign?`;
+        let persistentAttributes = {"userStarSign": userStarSign}
+        handlerInput.attributesManager.setPersistentAttributes(persistentAttributes);
+        var saveUserReponse = saveUserData();
+        if(saveUserReponse) {
+          successStatus = "Success";
+          speechOutput =
+            `Your star sign has been updated to ${userStarSign}.
+            Would you like to hear the horoscope for ${userStarSign}, or, you can hear the horoscope for any other star sign?`;
+        } else {
+          successStatus = "Failure";
+          speechOutput =
+            `Hmmm... I seem to be having difficulty saving ${userStarSign} as your star sign.
+            I will give my crystal ball a polish. Please try again later.`;
+        }
       } else {
         if (isAlphaTextString(setStarSign)) {
           failedContext = setStarSign;
@@ -815,6 +826,8 @@ const GetHoroscopeFromDateIntent = {
       if (userStarSign == "") {
         userStarSign = dateStarSign;
         updatedStarSign = userStarSign;
+        let persistentAttributes = {"userStarSign": updatedStarSign}
+        handlerInput.attributesManager.setPersistentAttributes(persistentAttributes);
       }
       // get the horoscope for the star sign
       let starSignQueried = dateStarSign;
@@ -1166,25 +1179,29 @@ function starSignFromDate(dateToCompare) {
   }
 }
 
-function saveUserData(handlerInput, starSignAttribute) {
+function saveUserData() {
+  let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
   return new Promise((resolve, reject) => {
-    if (validateStarSign(starSignAttribute)) {
-      let attributes = {"userStarSign": starSignAttribute}
-      handlerInput.attributesManager.setPersistentAttributes(attributes);
-      handlerInput.attributesManager.savePersistentAttributes()
-      .then(() => {
-        // Clear any other saved star signs so we don't override the star sign we just saved.
-        updatedStarSign = "";
-        resolve();
-      })
-      .catch((err) => {
-        console.log(`ERROR: Failed to save user star sign to table horoscopeUsers_starsign. ${error}`);
-        reject(err);
+    handlerInput.attributesManager.savePersistentAttributes()
+    .then(() => {
+      console.log(`User star sign updated to: ${sessionAttributes}`);
+      new Promise((resolve, reject) => {
+        handlerInput.attributesManager.deletePersistentAttributes()
+        .then(() => {
+          console.log(`PersistentAttributes successfully cleared.`);
+          resolve();
+        })
+        .catch((error) => {
+          console.log(`ERROR: Failed to clear persistent attributes. ${error}`);
+          reject(error);
+        });
       });
-    } else {
-      console.log("ERROR: Failed to save user star sign to table horoscopeUsers_starsign.");
-      reject();
-    }
+      resolve();
+    })
+    .catch((error) => {
+      console.log(`ERROR: Failed to save user star sign to table daily_horoscope_users. ${error}`);
+      reject(error);
+    });
   });
 }
 
