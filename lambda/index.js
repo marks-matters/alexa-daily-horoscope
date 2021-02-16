@@ -672,14 +672,13 @@ const SetUserZodiacSignIntent = {
         var saveUserReponse = saveUserData();
         if(saveUserReponse) {
           successStatus = "Success";
-          speechOutput = `Your star sign has been updated to ${userStarSign}.`;
-          repromptOutput =
-            `Would you like to hear the horoscope for ${userStarSign}, or, you can hear the horoscope for any other star sign?`;
+          speechOutput =
+            `Your star sign has been updated to ${userStarSign}. You can hear your horoscope for the day. Just say, what is my horoscope?`;
             console.log(`STATUS: ${successStatus}, confirmationStatus: ${confirmationStatus}, spoken star sing: ${spokenStarSign}, star sign: ${setStarSign}`);
             return handlerInput.responseBuilder
               .speak(speechOutput)
               .withSimpleCard(displayTextTitle, speechOutput)
-              .reprompt(repromptOutput)
+              .withShouldEndSession(false)
               .getResponse();
         } else {
           successStatus = "Failure";
