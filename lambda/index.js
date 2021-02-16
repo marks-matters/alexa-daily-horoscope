@@ -48,7 +48,7 @@ var now = new Date(),
   dateOptions = { month: "long", day: "numeric", timeZone: "utc" },
   horoscopeData = {},
   speechOutput = "",
-  reprompt = "",
+  repromptOutput = "",
   spokenStarSign = "",
   starSignQueried = "",
   starSignBase = "",
@@ -169,13 +169,13 @@ const LaunchRequestHandler = {
     } else {
       successStatus = "Success";
       speechOutput = "I can provide readings for any of the 12 signs of the zodiac. Which star sign's horoscope would you like to hear?";
-      reprompt = "I didn't quite catch that, please request a star sign's horoscope, for example, Scorpio's horoscope, or, ask for help to discover additional horoscope functionality."
+      repromptOutput = "I didn't quite catch that, please request a star sign's horoscope, for example, Scorpio's horoscope, or, ask for help to discover additional horoscope functionality."
       starSignQueried = "None, welcomed instead";
     }
     console.log(`STATUS: ${successStatus}, star sign queried: ${starSignQueried}`);
     return handlerInput.responseBuilder
       .speak(speechOutput)
-      .reprompt(reprompt)
+      .reprompt(repromptOutput)
       .withSimpleCard(displayTextTitle, speechOutput)
       .getResponse();
   }
@@ -247,7 +247,7 @@ const GetSpecificHoroscopeIntent = {
     const request = handlerInput.requestEnvelope.request;
     console.log(`Request: ${request.intent.name}`);
     speechOutput = "";
-    reprompt = "";
+    repromptOutput = "";
     let spokenStarSign = request.intent.slots.zodiacSign.value;
     let starSignQueried = spokenStarSign;
     // Check the response to determine if there are any mapped values
@@ -270,7 +270,7 @@ const GetSpecificHoroscopeIntent = {
       successStatus = "Success";
       speechOutput = `${spokenStarSign}. ${text}
       Which other horoscope would you like to hear?`;
-      reprompt = "You can hear daily horoscopes for all star signs, just ask for, Scorpio's horoscope, or, my horoscope?";
+      repromptOutput = "You can hear daily horoscopes for all star signs, just ask for, Scorpio's horoscope, or, my horoscope?";
     } else {
       if (isAlphaTextString(spokenStarSign)) {
         failedContext = spokenStarSign;
@@ -280,13 +280,13 @@ const GetSpecificHoroscopeIntent = {
       successStatus = "Failure";
       speechOutput = `Oh no, there appears to be a problem today with my crystal ball for ${failedContext}!
         While I work on a reading for ${failedContext}, give a different star sign a go!`;
-      reprompt =
+      repromptOutput =
         "While I'm busy, you can ask for the star sign or horoscope of a specific date, or discover the compatibility between your and your partner's star signs.";
     }
     console.log(`STATUS: ${successStatus}, spoken star sign: ${spokenStarSign}, star sign queried: ${starSignQueried}`);
     return handlerInput.responseBuilder
       .speak(speechOutput)
-      .reprompt(reprompt)
+      .reprompt(repromptOutput)
       .withSimpleCard(displayTextTitle, speechOutput)
       .getResponse();
   }
@@ -329,7 +329,7 @@ const GetUserHoroscopeIntent = {
   async handle(handlerInput) {
     console.log(`Request: ${handlerInput.requestEnvelope.request.intent.name}`);
     speechOutput = "";
-    reprompt = "";
+    repromptOutput = "";
     if (userStarSign) {
       let starSignQueried = userStarSign;
       let reading = await getHoroscope(starSignQueried);
@@ -345,19 +345,19 @@ const GetUserHoroscopeIntent = {
         successStatus = "Failure";
         speechOutput = `Oh no, there appears to be a problem today with my crystal ball for ${starSignQueried}!
         Try again later, I'll give my crystal ball a polish!`;
-        reprompt = "While I'm busy, you can ask for help to discover additional horoscope functionality.";
+        repromptOutput = "While I'm busy, you can ask for help to discover additional horoscope functionality.";
       }
     } else {
       successStatus = "Failure";
       speechOutput =
         "Oh, I don't appear to have a saved star sign for you. Please save a star sign, and I will remember it for next time!";
-      reprompt =
+      repromptOutput =
         "You can save a star sign by saying, save star sign as Aries, or, you can ask for the horoscope of any star sign.";
     }
     console.log(`STATUS: ${successStatus}, star sign queried: ${userStarSign}`);
     return handlerInput.responseBuilder
       .speak(speechOutput)
-      .reprompt(reprompt)
+      .reprompt(repromptOutput)
       .withSimpleCard(displayTextTitle, speechOutput)
       .getResponse();
   }
@@ -414,7 +414,7 @@ const GetZoidicSignFromDateIntent = {
     const request = handlerInput.requestEnvelope.request;
     console.log(`Request: ${request.intent.name}`);
     speechOutput = "";
-    reprompt = "";
+    repromptOutput = "";
     // collect the date slot value
     compareToDate = new Date(request.intent.slots.dateForZodiacSign.value);
     const dateStarSign = starSignFromDate(compareToDate);
@@ -430,19 +430,19 @@ const GetZoidicSignFromDateIntent = {
       successStatus = "Success";
       speechOutput = `The star sign for someone born on ${compareToDate.toLocaleString("en-GB", dateOptions)} is ${dateStarSign}.
       Which other date, or, which other star sign's horoscope would you like to know?`;
-      reprompt = "Ask for the star sign of a different date of birth, or, check out any star sign's horoscope.";
+      repromptOutput = "Ask for the star sign of a different date of birth, or, check out any star sign's horoscope.";
     } else {
       console.log(`Failure with dateStarSign: ${validateStarSign(dateStarSign)}, or with compareToDate: ${compareToDate}`);
       successStatus = "Failure";
       speechOutput = "Hmmm, I don't quite know that date, please try a Gregorian calendar date.";
-      reprompt =
+      repromptOutput =
         "Ask for the star sign of a different date, for example, someone born today, or the star sign for January, the third. Or, ask for help to discover additional horoscope functionality.";
     }
     console.log(`STATUS: ${successStatus}, date queried: ${compareToDate}`);
     // emit the response, keep daily horoscope open
     return handlerInput.responseBuilder
       .speak(speechOutput)
-      .reprompt(reprompt)
+      .reprompt(repromptOutput)
       .withSimpleCard(displayTextTitle, speechOutput)
       .getResponse();
   }
@@ -545,7 +545,7 @@ const GetCompatibleZodiacSignIntent = {
     const request = handlerInput.requestEnvelope.request;
     console.log(`Request: ${request.intent.name}`);
     speechOutput = "";
-    reprompt = "";
+    repromptOutput = "";
     const spokenStarSignA = request.intent.slots.zodiacSignA.value;
     const spokenStarSignB = request.intent.slots.zodiacSignB.value;
     var starSignASlot = spokenStarSignA;
@@ -571,7 +571,7 @@ const GetCompatibleZodiacSignIntent = {
     if (text) {
       speechOutput = `${text}
       Which other star signs' compatibility would you like to hear, or you can hear the horoscope for a specific star sign?`;
-      reprompt =
+      repromptOutput =
         "You can also hear daily horoscopes for all star signs, just ask for, Scorpio's horoscope, or, my horoscope?";
       successStatus = "Success";
     } else {
@@ -591,13 +591,13 @@ const GetCompatibleZodiacSignIntent = {
         }
       }
       speechOutput = `There appears to be a problem with my crystal ball ${failedContext}. Please try again.`;
-      reprompt = "You can ask for the star sign or horoscope of a specific date, or, hear the horoscope for a specific star sign.";
+      repromptOutput = "You can ask for the star sign or horoscope of a specific date, or, hear the horoscope for a specific star sign.";
       successStatus = `Failure, failedContext: ${failedContext}`;
     }
     console.log(`STATUS: ${successStatus}, spokenStarSignA: ${spokenStarSignA}, spokenStarSignB: ${spokenStarSignB}, starSignASlot: ${starSignASlot}, starSignBSlot: ${starSignBSlot}`);
     return handlerInput.responseBuilder
       .speak(speechOutput)
-      .reprompt(reprompt)
+      .reprompt(repromptOutput)
       .withSimpleCard(displayTextTitle, speechOutput)
       .getResponse();
     }
@@ -672,9 +672,15 @@ const SetUserZodiacSignIntent = {
         var saveUserReponse = saveUserData();
         if(saveUserReponse) {
           successStatus = "Success";
-          speechOutput =
-            `Your star sign has been updated to ${userStarSign}.
-            Would you like to hear the horoscope for ${userStarSign}, or, you can hear the horoscope for any other star sign?`;
+          speechOutput = `Your star sign has been updated to ${userStarSign}.`;
+          repromptOutput =
+            `Would you like to hear the horoscope for ${userStarSign}, or, you can hear the horoscope for any other star sign?`;
+            console.log(`STATUS: ${successStatus}, confirmationStatus: ${confirmationStatus}, spoken star sing: ${spokenStarSign}, star sign: ${setStarSign}`);
+            return handlerInput.responseBuilder
+              .speak(speechOutput)
+              .withSimpleCard(displayTextTitle, speechOutput)
+              .reprompt(repromptOutput)
+              .getResponse();
         } else {
           successStatus = "Failure";
           speechOutput =
@@ -696,8 +702,7 @@ const SetUserZodiacSignIntent = {
     console.log(`STATUS: ${successStatus}, confirmationStatus: ${confirmationStatus}, spoken star sing: ${spokenStarSign}, star sign: ${setStarSign}`);
     return handlerInput.responseBuilder
       .speak(speechOutput)
-      .withSimpleCard(displayTextTitle, speechOutput)
-      .getResponse();
+      .withSimpleCard(displayTextTitle, speechOutput);
   }
 };
 
@@ -807,7 +812,7 @@ const GetHoroscopeFromDateIntent = {
     const request = handlerInput.requestEnvelope.request;
     console.log(`Request: ${request.intent.name}`);
     speechOutput = "";
-    reprompt = "";
+    repromptOutput = "";
     // collect the date slot value
     compareToDate = new Date(request.intent.slots.dateForHoroscope.value);
     const dateStarSign = starSignFromDate(compareToDate);
@@ -840,14 +845,14 @@ const GetHoroscopeFromDateIntent = {
         .getResponse();
     } else {
       speechOutput = "Hmmm, I don't quite know that date, please try a Gregorian calendar date.";
-      reprompt =
+      repromptOutput =
         "Ask for the horoscope of a specific date of birth, for example, someone born today, or, the horoscope for January, the third. Or, you can check out any star sign's horoscope.";
       successStatus = "Failure";
       console.log(`STATUS: ${successStatus}, date queried: ${compareToDate}`);
       return (
         handlerInput.responseBuilder
           .speak(speechOutput)
-          .reprompt(reprompt)
+          .reprompt(repromptOutput)
           // TODO: display error response to user
           .withSimpleCard(displayTextTitle, speechOutput)
           .getResponse()
@@ -870,10 +875,10 @@ const HelpIntentHandler = {
     console.log(`Request: ${handlerInput.requestEnvelope.request.intent.name}`);
     speechOutput =
       "Your Daily Horoscope skill has five, fun functionalities. You can get horoscope readings by star sign, get the star sign or horoscope for someone born on a specific date, find out the relationship compatibility between two star signs, and you can set your star sign and then get a daily horoscope reading by simply asking Daily Horoscope for my daily horoscope!";
-    reprompt = "Try something like, set my star sign to Taurus, or what is the horoscope for Scorpio?";
+    repromptOutput = "Try something like, set my star sign to Taurus, or what is the horoscope for Scorpio?";
     return handlerInput.responseBuilder
       .speak(speechOutput)
-      .reprompt(reprompt)
+      .reprompt(repromptOutput)
       .withSimpleCard(displayTextTitle, speechOutput)
       .getResponse();
   }
