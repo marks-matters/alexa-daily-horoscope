@@ -335,7 +335,7 @@ const GetUserHoroscopeIntent = {
       let reading = await getHoroscope(starSignQueried);
       if (reading) {
         successStatus = "Success";
-        speechOutput = `${starSignQueried}. ${reading} Just ask for any other star sign's horoscope, or, update your saved star sign.`;
+        speechOutput = `${starSignQueried}. ${reading}`;
         console.log(`STATUS: ${successStatus}, star sign queried: ${starSignQueried}`);
         return handlerInput.responseBuilder
           .speak(speechOutput)
@@ -344,15 +344,19 @@ const GetUserHoroscopeIntent = {
       } else {
         successStatus = "Failure";
         speechOutput = `Oh no, there appears to be a problem today with my crystal ball for ${starSignQueried}!
-        Try again later, I'll give my crystal ball a polish!`;
-        repromptOutput = "While I'm busy, you can ask for help to discover additional horoscope functionality.";
+        Please try again later, I'll give my crystal ball a polish!`;
+        console.log(`STATUS: ${successStatus}, star sign queried: ${starSignQueried}`);
+        return handlerInput.responseBuilder
+          .speak(speechOutput)
+          .withSimpleCard(displayTextTitle, speechOutput)
+          .getResponse();
       }
     } else {
       successStatus = "Failure";
       speechOutput =
         "Oh, I don't appear to have a saved star sign for you. Please save a star sign, and I will remember it for next time!";
       repromptOutput =
-        "You can save a star sign by saying, save star sign as Aries, or, you can ask for the horoscope of any star sign.";
+        "You can save a star sign by saying, save star sign as Aries.";
     }
     console.log(`STATUS: ${successStatus}, star sign queried: ${userStarSign}`);
     return handlerInput.responseBuilder
