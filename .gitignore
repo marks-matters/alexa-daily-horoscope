@@ -15,6 +15,7 @@ archive/
 lambda/node_modules/
 
 # Sketch files
+icons.sketch
 *.sketch
 
 package-lock.json
