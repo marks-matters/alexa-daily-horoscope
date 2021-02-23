@@ -1,5 +1,5 @@
-// There are five sections; imports, definitions, interceptors, skill handlers, and functions.
 'use strict';
+// There are five sections; imports, definitions, interceptors, skill handlers, and functions.
 /* 0. IMPORT MODULES ======================================================================================= */
 const Alexa = require("ask-sdk");
 const AWS = require("aws-sdk");
@@ -117,7 +117,7 @@ const GetUserDataInterceptor = {
 
 const SaveUserDataInterceptor = {
   process(handlerInput) {
-    saveUserData();
+    saveUserData(handlerInput);
   }
 };
 
@@ -673,7 +673,7 @@ const SetUserZodiacSignIntent = {
         userStarSign = setStarSign;
         persistentStarSign.userStarSign = userStarSign;
         handlerInput.attributesManager.setPersistentAttributes(persistentStarSign);
-        var saveUserReponse = saveUserData();
+        var saveUserReponse = saveUserData(handlerInput);
         if(saveUserReponse) {
           successStatus = "Success";
           speechOutput =
@@ -1004,13 +1004,13 @@ async function horoscopeDownloadAndDbUpdate(missingList) {
   try {
     let reading = await downloadHoroscope(getStarSign);
     let updateStatus = await updateDBHoroscope(getStarSign, reading);
-    if (missingList.length == 0) {
-        return true;
-    } else {
-      await horoscopeDownloadAndDbUpdate(missingList);
-    }
-  } catch (exception) {
-    return exception;
+  }  catch (exception) {
+    console.log(exception);
+  }
+  if (missingList.length == 0) {
+      return true;
+  } else {
+    await horoscopeDownloadAndDbUpdate(missingList);
   }
 }
 
@@ -1040,9 +1040,9 @@ function downloadHoroscope(downloadStarSign) {
       res.on("end", () => {
         var indexTodayDiv = body.indexOf('day-tabs-content_horoscope', body.indexOf('day-tabs-content_horoscope') + 1);
         var relevantText = body.substring(indexTodayDiv, indexTodayDiv + 2800);
-        var indexPStart = relevantText.indexOf('class="ct-span" >');
+        var indexPStart = relevantText.indexOf('class="ct-span">');
         var indexPEnd = relevantText.indexOf("</span></div>", indexPStart);
-        let reading = relevantText.substring(indexPStart + 17, indexPEnd);
+        let reading = relevantText.substring(indexPStart + 16, indexPEnd);
         var hrefOccrences = (reading.match(new RegExp("<a href", "g")) || []).length;
         if (hrefOccrences > 0) {
           for (var i = 0; i < hrefOccrences; i++) {
@@ -1179,7 +1179,7 @@ function starSignFromDate(dateToCompare) {
   }
 }
 
-function saveUserData() {
+function saveUserData(handlerInput) {
   let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
   return new Promise((resolve, reject) => {
     handlerInput.attributesManager.savePersistentAttributes()

@@ -1,11 +1,10 @@
 {
   "name": "alexa-daily-horoscope",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "An Alexa Skill that provides a daily horoscope reading",
   "private": true,
   "dependencies": {
-    "ask-sdk": "^2.8.0",
-    "aws-sdk": "^2.653.0"
+    "ask-sdk": "^2.10.0"
   },
   "main": "index.js",
   "scripts": {
