@@ -1041,12 +1041,12 @@ function downloadHoroscope(downloadStarSign) {
         var indexTodayDiv = body.indexOf('day-tabs-content_horoscope', body.indexOf('day-tabs-content_horoscope') + 1);
         var relevantText = body.substring(indexTodayDiv, indexTodayDiv + 2800);
         var indexPStart = relevantText.indexOf('class="ct-span">');
-        var indexPEnd = relevantText.indexOf("</span></div>", indexPStart);
+        var indexPEnd = relevantText.indexOf("</span></div><div id", indexPStart);
         let reading = relevantText.substring(indexPStart + 16, indexPEnd);
-        var hrefOccrences = (reading.match(new RegExp("<a href", "g")) || []).length;
+        var hrefOccrences = (reading.match(new RegExp("<a ", "g")) || []).length;
         if (hrefOccrences > 0) {
           for (var i = 0; i < hrefOccrences; i++) {
-            var indexHStart = reading.indexOf("<a href");
+            var indexHStart = reading.indexOf("<a ");
             var indexHEnd = reading.indexOf("</a>", indexHStart);
             reading = reading.substring(0, indexHStart) + reading.substring(indexHEnd);
             reading = reading.replace('</a></div>" >', "").replace("</a>", "");
