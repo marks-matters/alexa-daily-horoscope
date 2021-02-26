@@ -93,7 +93,6 @@ const GetUserDataInterceptor = {
         handlerInput.attributesManager.getPersistentAttributes()
         .then((attributes) => {
           var persistentAttributes = JSON.parse(attributes);
-          console.log('Try 2', persistentAttributes.userStarSign.S);
           if (validateStarSign(persistentAttributes.userStarSign.S)) {
             userStarSign = persistentAttributes.userStarSign.S;
             console.log(`RETURNING USER with star sign: ${userStarSign}`);
