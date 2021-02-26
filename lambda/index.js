@@ -6,7 +6,7 @@ const AWS = require("aws-sdk");
 var https = require("https");
 
 /* 1. DECLARATIONS ================================================================================ */
-const appId = "",
+const appId = "amzn1.ask.skill.d373228d-ef5c-4a0c-a005-583c0d25bf11",
   AWSregion = "us-east-1",
   sessionEventsTableName = "daily_horoscope_users",
   displayTextTitle = "Your Daily Horoscope by marks_matters",
@@ -138,30 +138,16 @@ const LaunchRequestHandler = {
         if (reading) {
           successStatus = "Success";
           speechOutput =
-            `Your daily horoscope for ${starSignQueried} is:
-            ${reading}`;
+            `Your daily horoscope for ${starSignQueried} is: ${reading}`;
         } else {
           successStatus = "Failure";
-          speechOutput = `Oh no, there appears to be a problem today with my crystal ball for ${starSignQueried}! I'll have to give it a polish.
-          While I work on that, you can ask for the star sign or horoscope of a specific date, or discover the compatibility between your and your partner's star signs.`;
+          speechOutput = `Oh no, there appears to be a problem today with my crystal ball for ${starSignQueried}! I'll have to give it a polish. While I work on that, you can ask for the star sign or horoscope of a specific date, or discover the compatibility between your and your partner's star signs.`;
         }
       })
       .catch((error) => {
         successStatus = "Failure";
-        speechOutput = `Oh no, there appears to be a problem today with my crystal ball for ${starSignQueried}! I'll have to give it a polish.
-        While I work on that, you can ask for the star sign or horoscope of a specific date, or discover the compatibility between your and your partner's star signs.`;
+        speechOutput = `Oh no, there appears to be a problem today with my crystal ball for ${starSignQueried}! I'll have to give it a polish. While I work on that, you can ask for the star sign or horoscope of a specific date, or discover the compatibility between your and your partner's star signs.`;
       });
-      // let reading = await getHoroscope(starSignQueried);
-      // if (reading) {
-      //   successStatus = "Success";
-      //   speechOutput =
-      //     `Your daily horoscope for ${starSignQueried} is:
-      //     ${reading}`;
-      // } else {
-      //   successStatus = "Failure";
-      //   speechOutput = `Oh no, there appears to be a problem today with my crystal ball for ${starSignQueried}! I'll have to give it a polish.
-      //   While I work on that, you can ask for the star sign or horoscope of a specific date, or discover the compatibility between your and your partner's star signs.`;
-      // }
       console.log(`STATUS: ${successStatus}, star sign queried: ${starSignQueried}`);
       return handlerInput.responseBuilder
         .speak(speechOutput)
@@ -269,8 +255,7 @@ const GetSpecificHoroscopeIntent = {
     var text = await getHoroscope(starSignQueried);
     if (text) {
       successStatus = "Success";
-      speechOutput = `${spokenStarSign}. ${text}
-      Which other horoscope would you like to hear?`;
+      speechOutput = `${spokenStarSign}. ${text} Which other horoscope would you like to hear?`;
       repromptOutput = "You can hear daily horoscopes for all star signs, just ask for, Scorpio's horoscope, or, my horoscope?";
     } else {
       if (isAlphaTextString(spokenStarSign)) {
@@ -279,8 +264,7 @@ const GetSpecificHoroscopeIntent = {
         failedContext = "that star sign";
       }
       successStatus = "Failure";
-      speechOutput = `Oh no, there appears to be a problem today with my crystal ball for ${failedContext}!
-        While I work on a reading for ${failedContext}, give a different star sign a go!`;
+      speechOutput = `Oh no, there appears to be a problem today with my crystal ball for ${failedContext}! While I work on a reading for ${failedContext}, give a different star sign a go!`;
       repromptOutput =
         "While I'm busy, you can ask for the star sign or horoscope of a specific date, or discover the compatibility between your and your partner's star signs.";
     }
@@ -344,8 +328,7 @@ const GetUserHoroscopeIntent = {
           .getResponse();
       } else {
         successStatus = "Failure";
-        speechOutput = `Oh no, there appears to be a problem today with my crystal ball for ${starSignQueried}!
-        Please try again later, I'll give my crystal ball a polish!`;
+        speechOutput = `Oh no, there appears to be a problem today with my crystal ball for ${starSignQueried}! Please try again later, I'll give my crystal ball a polish!`;
         console.log(`STATUS: ${successStatus}, star sign queried: ${starSignQueried}`);
         return handlerInput.responseBuilder
           .speak(speechOutput)
@@ -433,8 +416,7 @@ const GetZoidicSignFromDateIntent = {
         userStarSign = dateStarSign;
       }
       successStatus = "Success";
-      speechOutput = `The star sign for someone born on ${compareToDate.toLocaleString("en-GB", dateOptions)} is ${dateStarSign}.
-      Which other date, or, which other star sign's horoscope would you like to know?`;
+      speechOutput = `The star sign for someone born on ${compareToDate.toLocaleString("en-GB", dateOptions)} is ${dateStarSign}. Which other date, or, which other star sign's horoscope would you like to know?`;
       repromptOutput = "Ask for the star sign of a different date of birth, or, check out any star sign's horoscope.";
     } else {
       console.log(`Failure with dateStarSign: ${validateStarSign(dateStarSign)}, or with compareToDate: ${compareToDate}`);
@@ -574,8 +556,7 @@ const GetCompatibleZodiacSignIntent = {
     }
     var text = await getCompatibility(starSignASlot, starSignBSlot);
     if (text) {
-      speechOutput = `${text}
-      Which other star signs' compatibility would you like to hear, or you can hear the horoscope for a specific star sign?`;
+      speechOutput = `${text} Which other star signs' compatibility would you like to hear, or you can hear the horoscope for a specific star sign?`;
       repromptOutput =
         "You can also hear daily horoscopes for all star signs, just ask for, Scorpio's horoscope, or, my horoscope?";
       successStatus = "Success";
@@ -688,8 +669,7 @@ const SetUserZodiacSignIntent = {
         } else {
           successStatus = "Failure";
           speechOutput =
-            `Hmmm... I seem to be having difficulty saving ${userStarSign} as your star sign.
-            I will give my crystal ball a polish. Please try again later.`;
+            `Hmmm... I seem to be having difficulty saving ${userStarSign} as your star sign. I will give my crystal ball a polish. Please try again later.`;
         }
       } else {
         if (isAlphaTextString(setStarSign)) {
@@ -698,8 +678,7 @@ const SetUserZodiacSignIntent = {
           failedContext = "that star sign";
         }
         speechOutput =
-          `Hmmm... I don't recognize ${failedContext}.
-          Please try again by setting one of the 12 signs of the Zodiac as your star sign.`;
+          `Hmmm... I don't recognize ${failedContext}. Please try again by setting one of the 12 signs of the Zodiac as your star sign.`;
         successStatus = "Failure";
       }
     }
@@ -749,8 +728,7 @@ const GetUserZodiacSignIntent = {
     console.log(`Request: ${handlerInput.requestEnvelope.request.intent.name}`);
     speechOutput = "";
     if ( userStarSign ) {
-      speechOutput = `Your star sign is set to ${userStarSign}.
-      You're welcome to change it, or, you can hear your horoscope for the day.`;
+      speechOutput = `Your star sign is set to ${userStarSign}. You're welcome to change it, or, you can hear your horoscope for the day.`;
       successStatus = "Success";
     } else {
       speechOutput =
@@ -836,8 +814,7 @@ const GetHoroscopeFromDateIntent = {
         // check that the horoscope was returned correctly for the star sign
       if (text) {
         successStatus = "Success";
-        speechOutput = `${dateStarSign}. ${text}
-        You can also ask for someone's star sign, based on their birthday.`;
+        speechOutput = `${dateStarSign}. ${text} You can also ask for someone's star sign, based on their birthday.`;
       } else {
         successStatus = "Failure as reading from getHoroscope";
         speechOutput =
