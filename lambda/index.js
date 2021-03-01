@@ -108,7 +108,6 @@ const GetUserDataInterceptor = {
       });
     } else if (validateStarSign(sessionAttributes.userStarSign)) {
       userStarSign = sessionAttributes.userStarSign;
-      // updatedStarSign = userStarSign;
       console.log(`Returning user with star sign: ${userStarSign}`);
     } else {
       console.log(`User launching skill is not identified as new or returning with a valid existing star sign, ${sessionAttributes.userStarSign}`);
@@ -118,7 +117,9 @@ const GetUserDataInterceptor = {
 
 const SaveUserDataInterceptor = {
   process(handlerInput) {
-    saveUserData(handlerInput);
+    if ( handlerInput.requestEnvelope.request.type !== "CanFulfillIntentRequest" ) {
+      saveUserData(handlerInput);
+    }
   }
 };
 
