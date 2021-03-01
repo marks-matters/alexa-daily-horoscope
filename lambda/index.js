@@ -6,7 +6,7 @@ const AWS = require("aws-sdk");
 var https = require("https");
 
 /* 1. DECLARATIONS ================================================================================ */
-const appId = "amzn1.ask.skill.d373228d-ef5c-4a0c-a005-583c0d25bf11",
+const appId = "",
   AWSregion = "us-east-1",
   sessionEventsTableName = "daily_horoscope_users",
   displayTextTitle = "Your Daily Horoscope by marks_matters",
@@ -88,7 +88,7 @@ const GetUserDataInterceptor = {
     // Fetch the user's star sign from session or stored data
     let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
     // check to see that session attributes are loaded before pulling in the persistent attributes
-    if ( Object.keys(sessionAttributes).length === 0 || sessionAttributes.userStarSign === undefined) {
+    if ( Object.keys(sessionAttributes).length === 0 || typeof sessionAttributes.userStarSign === "undefined") {
       return new Promise((resolve, reject) => {
         handlerInput.attributesManager.getPersistentAttributes()
         .then((attributes) => {
@@ -106,9 +106,8 @@ const GetUserDataInterceptor = {
           resolve();
         })
       });
-    } else if (validateStarSign(sessionAttributes["userStarSign"])) {
-      userStarSign = sessionAttributes["userStarSign"];
-      // updatedStarSign = userStarSign;
+    } else if (validateStarSign(sessionAttributes.userStarSign)) {
+      userStarSign = sessionAttributes.userStarSign;
       console.log(`Returning user with star sign: ${userStarSign}`);
     } else {
       console.log(`User launching skill is not identified as new or returning with a valid existing star sign, ${sessionAttributes.userStarSign}`);
@@ -118,7 +117,9 @@ const GetUserDataInterceptor = {
 
 const SaveUserDataInterceptor = {
   process(handlerInput) {
-    saveUserData(handlerInput);
+    if ( handlerInput.requestEnvelope.request.type !== "CanFulfillIntentRequest" ) {
+      saveUserData(handlerInput);
+    }
   }
 };
 
@@ -238,7 +239,7 @@ const GetSpecificHoroscopeIntent = {
     let spokenStarSign = request.intent.slots.zodiacSign.value;
     let starSignQueried = spokenStarSign;
     // Check the response to determine if there are any mapped values
-    if (typeof request.intent.slots.zodiacSign.resolutions !== undefined
+    if (typeof request.intent.slots.zodiacSign.resolutions !== "undefined"
     && request.intent.slots.zodiacSign.resolutions.resolutionsPerAuthority[0].status.code == "ER_SUCCESS_MATCH") {
       starSignQueried = request.intent.slots.zodiacSign.resolutions.resolutionsPerAuthority[0].values[0].value.name;
     }
@@ -537,11 +538,11 @@ const GetCompatibleZodiacSignIntent = {
     const spokenStarSignB = request.intent.slots.zodiacSignB.value;
     var starSignASlot = spokenStarSignA;
     var starSignBSlot = spokenStarSignB;
-    if (typeof request.intent.slots.zodiacSignA.resolutions !== undefined
+    if (typeof request.intent.slots.zodiacSignA.resolutions !== "undefined"
     && request.intent.slots.zodiacSignA.resolutions.resolutionsPerAuthority[0].status.code == "ER_SUCCESS_MATCH") {
       starSignASlot = request.intent.slots.zodiacSignA.resolutions.resolutionsPerAuthority[0].values[0].value.name;
     }
-    if (typeof request.intent.slots.zodiacSignB.resolutions !== undefined
+    if (typeof request.intent.slots.zodiacSignB.resolutions !== "undefined"
     && request.intent.slots.zodiacSignB.resolutions.resolutionsPerAuthority[0].status.code == "ER_SUCCESS_MATCH") {
       starSignBSlot = request.intent.slots.zodiacSignB.resolutions.resolutionsPerAuthority[0].values[0].value.name;
     }
@@ -642,7 +643,7 @@ const SetUserZodiacSignIntent = {
     let spokenStarSign = request.intent.slots.inputZodiacSign.value;
     var setStarSign = spokenStarSign;
     // set setStarSign to the validated slot value that accompanies the SetUserZodiacSignIntent intent
-    if (typeof request.intent.slots.inputZodiacSign.resolutions !== undefined
+    if (typeof request.intent.slots.inputZodiacSign.resolutions !== "undefined"
     && request.intent.slots.inputZodiacSign.resolutions.resolutionsPerAuthority[0].status.code == "ER_SUCCESS_MATCH") {
       setStarSign = request.intent.slots.inputZodiacSign.resolutions.resolutionsPerAuthority[0].values[0].value.name;
     }
@@ -904,7 +905,7 @@ const SessionEndedRequestHandler = {
 // Check that the supplied string does not contain any characters which may be unconverted HTML.
 function isTextString(text) {
   var isText = false;
-  if (typeof text !== undefined && /^[a-zA-Z][a-zA-Z0-9- !,?:'.();"]*$/.test(text)) {
+  if (typeof text !== "undefined" && /^[a-zA-Z][a-zA-Z0-9- !,?:'.();"]*$/.test(text)) {
     isText = true;
   }
   return isText;
