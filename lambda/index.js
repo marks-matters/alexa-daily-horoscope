@@ -6,7 +6,7 @@ const AWS = require("aws-sdk");
 var https = require("https");
 
 /* 1. DECLARATIONS ================================================================================ */
-const appId = "",
+const appId = "amzn1.ask.skill.d373228d-ef5c-4a0c-a005-583c0d25bf11",
   AWSregion = "us-east-1",
   sessionEventsTableName = "daily_horoscope_users",
   displayTextTitle = "Your Daily Horoscope by marks_matters",
@@ -95,6 +95,8 @@ const GetUserDataInterceptor = {
           var persistentAttributes = JSON.parse(attributes);
           if (validateStarSign(persistentAttributes.userStarSign.S)) {
             userStarSign = persistentAttributes.userStarSign.S;
+            sessionAttributes.userStarSign = userStarSign;
+            handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
             console.log(`RETURNING USER with star sign: ${userStarSign}`);
           } else {
             console.log(`Dodgy saved star sign: ${persistentAttributes.userStarSign.S}`);
@@ -1159,11 +1161,10 @@ function starSignFromDate(dateToCompare) {
 }
 
 function saveUserData(handlerInput) {
-  let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
   return new Promise((resolve, reject) => {
     handlerInput.attributesManager.savePersistentAttributes()
     .then(() => {
-      console.log(`User star sign updated to: ${sessionAttributes}`);
+      console.log(`User star sign updated to: ${userStarSign}`);
       resolve();
     })
     .catch((error) => {
