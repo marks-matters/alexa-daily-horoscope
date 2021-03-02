@@ -6,7 +6,7 @@ const AWS = require("aws-sdk");
 var https = require("https");
 
 /* 1. DECLARATIONS ================================================================================ */
-const appId = "amzn1.ask.skill.d373228d-ef5c-4a0c-a005-583c0d25bf11",
+const appId = "",
   AWSregion = "us-east-1",
   sessionEventsTableName = "daily_horoscope_users",
   displayTextTitle = "Your Daily Horoscope by marks_matters",
