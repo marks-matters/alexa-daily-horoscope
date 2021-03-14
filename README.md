@@ -6,4 +6,4 @@ Includes other functionality, such as getting the star sign or horoscope for a d
 Invoked via:
 > "Alexa, launch Daily Horoscope"
 
-Horoscope readings are provided by https://new.theastrologer.com
+Horoscope readings are provided by https://astrology.tv/
